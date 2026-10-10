@@ -15,25 +15,24 @@ Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase
 $ExternalInvocation = $MyInvocation.CommandOrigin -eq 'Internal' -or $MyInvocation.InvocationName -eq '&'
 #region 00.Config
 
-# ---- App identity ---------------------------------------------------------
 $script:AppUserModelId = 'HK.WPF.PingMonitor'
-# ---- Graph / UI geometry (themes must NOT override these) ------------------
+
 $script:Config = [pscustomobject]@{
-    GraphWidth       = 240.0
-    GraphHeight      = 60.0
-    GraphMaxRttMs    = 300.0      # RTT value that fills the graph to 100% height
+    GraphWidth       = 198.0
+    GraphHeight      = 45.0
+    GraphMaxRttMs    = 300.0
     GraphBarGap      = 2.0
     GraphMinBarHeight= 5.0
     GraphErrorBarHeight = 2.0
-    DragThresholdPx  = 5          # mouse movement needed before a card/row drag starts
-    InsertBeforeWeight = 0.8      # left 80% of a card inserts-before, right 20% inserts-after
+    DragThresholdPx  = 5 
+    InsertBeforeWeight = 0.8
     MaxConcurrentPings = 20
-    RttWarningMs     = 150        # > this  -> amber
-    RttCriticalMs    = 250        # > this  -> red
-    ToolbarLabelWidthBreak = 462     # below this window width, toolbar/status text labels hide
-    ScrollBarWidth   = 10         # themed scrollbar track width (thumb-only, no arrow buttons)
+    RttWarningMs     = 150
+    RttCriticalMs    = 250 
+    ToolbarLabelWidthBreak = 462 
+    ScrollBarWidth   = 10
 }
-# ---- Default monitoring settings (overridable by CLI params / config file) -
+
 function New-DefaultSettings {
     param(
         [int]$Interval     = 4,
@@ -66,9 +65,7 @@ function Get-ConfigPath {
 }
 #endregion
 #region 01.Native
-<#
-    Any native code should be added to this single class.
-#>
+
 if (-not ('PingMonitor.NativeMethods' -as [type])) {
     $nativeCode = @'
 using System;
@@ -1022,15 +1019,15 @@ function Update-WindowMinSize {
     $cardWidth = [double]$script:MonitorCardFootprint.Width
     $cardHeight = [double]$script:MonitorCardFootprint.Height
     $scrollbar = [double]$script:Config.ScrollBarWidth
+    $scrollMargin = 4.0
+
     if ($script:ViewMode -eq 'Table') {
-        # Table is two card footprints wide and reserves both scrollbars.
-        $contentWidth = (2 * $cardWidth) + $scrollbar
+        $contentWidth = (2 * $cardWidth) + $scrollbar + $scrollMargin
         $contentHeight = $cardHeight + $scrollbar
     }
     else {
-        # Card view reserves only the visible vertical scrollbar.
-        $contentWidth = $cardWidth + $scrollbar
-        $contentHeight = $cardHeight
+        $contentWidth = $cardWidth + $scrollbar + $scrollMargin
+        $contentHeight = $cardHeight + $scrollMargin
     }
 
     $root = $Window.Content
@@ -1114,7 +1111,7 @@ function Set-ViewMode {
 
 $script:MonitorCardXaml = [xml]@'
 <Border xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Width="240" Height="160" Margin="4" Padding="0" Background="{DynamicResource Theme.Card.Background}" BorderBrush="{DynamicResource Theme.Card.Border}" BorderThickness="1" CornerRadius="10">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Width="222" Height="148" Margin="4" Padding="0" Background="{DynamicResource Theme.Card.Background}" BorderBrush="{DynamicResource Theme.Card.Border}" BorderThickness="1" CornerRadius="10">
     <Border.Effect>
         <DropShadowEffect BlurRadius="12" ShadowDepth="2" Opacity="0.06" Color="#000000"/>
     </Border.Effect>
@@ -1158,12 +1155,12 @@ $script:MonitorCardXaml = [xml]@'
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
-                <Viewbox Grid.Row="0" Stretch="Uniform" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="0,2,0,0">
-                    <Canvas x:Name="GraphCanvas" Width="240" Height="60" Background="Transparent">
-                        <Line X1="0" Y1="0" X2="240" Y2="0" Stroke="{DynamicResource Theme.Border}" StrokeThickness="0.75"/>
-                        <Line X1="0" Y1="20" X2="240" Y2="20" Stroke="{DynamicResource Theme.Card.Border}" StrokeThickness="0.75"/>
-                        <Line X1="0" Y1="40" X2="240" Y2="40" Stroke="{DynamicResource Theme.Card.Border}" StrokeThickness="0.75"/>
-                        <Line X1="0" Y1="60" X2="240" Y2="60" Stroke="{DynamicResource Theme.Border}" StrokeThickness="0.75"/>
+                <Viewbox Grid.Row="0" Stretch="Fill" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="0,2,0,0">
+                    <Canvas x:Name="GraphCanvas" Width="198" Height="45" Background="Transparent">
+                        <Line X1="0" Y1="0" X2="198" Y2="0" Stroke="{DynamicResource Theme.Border}" StrokeThickness="0.75"/>
+                        <Line X1="0" Y1="15" X2="198" Y2="15" Stroke="{DynamicResource Theme.Card.Border}" StrokeThickness="0.75"/>
+                        <Line X1="0" Y1="30" X2="198" Y2="30" Stroke="{DynamicResource Theme.Card.Border}" StrokeThickness="0.75"/>
+                        <Line X1="0" Y1="45" X2="198" Y2="45" Stroke="{DynamicResource Theme.Border}" StrokeThickness="0.75"/>
                         <Canvas x:Name="GraphBars" Width="240" Height="60" Background="Transparent"/>
                     </Canvas>
                 </Viewbox>
