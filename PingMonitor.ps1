@@ -356,26 +356,8 @@ $script:BaseStyleXaml = @'
             </Trigger>
         </Style.Triggers>
     </Style>
-    <!-- Shared theme for every context menu in the application. Uses the standard WPF menu template. -->
-    <Style x:Key="ThemedContextMenuStyle" TargetType="ContextMenu">
-        <Setter Property="Background" Value="{DynamicResource Theme.Popup.Background}"/>
-        <Setter Property="Foreground" Value="{DynamicResource Theme.MenuItem.TextFill}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource Theme.Popup.Border}"/>
-        <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="Padding" Value="3"/>
-        <Setter Property="SnapsToDevicePixels" Value="True"/>
-    </Style>
-    <Style x:Key="ThemedContextMenuItemStyle" TargetType="MenuItem">
-        <Setter Property="Background" Value="Transparent"/>
-        <Setter Property="Foreground" Value="{DynamicResource Theme.MenuItem.TextFill}"/>
-        <Setter Property="Padding" Value="6,5"/>
-        <Setter Property="MinHeight" Value="30"/>
-        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-        <Setter Property="VerticalContentAlignment" Value="Center"/>
-        <Setter Property="SnapsToDevicePixels" Value="True"/>
-    </Style>
-    <Style TargetType="ContextMenu" BasedOn="{StaticResource ThemedContextMenuStyle}"/>
-    <Style TargetType="MenuItem" BasedOn="{StaticResource ThemedContextMenuItemStyle}"/>
+
+
     <Style x:Key="ThemedScrollBarThumb" TargetType="Thumb">
         <Setter Property="Background" Value="{DynamicResource Theme.Scrollbar.Thumb}"/>
         <Setter Property="Template">
@@ -532,6 +514,88 @@ $script:BaseStyleXaml = @'
             </Setter.Value>
         </Setter>
     </Style>
+
+    <!-- Shared theme for every context menu in the application. -->
+    <Style x:Key="ThemedContextMenuStyle" TargetType="ContextMenu">
+        <Setter Property="Background" Value="{DynamicResource Theme.Popup.Background}"/>
+        <Setter Property="Foreground" Value="{DynamicResource Theme.MenuItem.TextFill}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource Theme.Popup.Border}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="4"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ContextMenu">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="6"
+                            Padding="{TemplateBinding Padding}"
+                            SnapsToDevicePixels="True">
+                        <Border.Effect>
+                            <DropShadowEffect BlurRadius="14" ShadowDepth="3" Opacity="0.15" Color="#000000" Direction="270"/>
+                        </Border.Effect>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                            <ItemsPresenter />
+                        </ScrollViewer>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style x:Key="ThemedContextMenuItemStyle" TargetType="MenuItem">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{DynamicResource Theme.MenuItem.TextFill}"/>
+        <Setter Property="Padding" Value="8,6"/>
+        <Setter Property="MinHeight" Value="30"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="MenuItem">
+                    <Border x:Name="Bg" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="24"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <!-- Icon -->
+                            <ContentPresenter x:Name="IconPart" Grid.Column="0" Content="{TemplateBinding Icon}" 
+                                              HorizontalAlignment="Center" VerticalAlignment="Center" 
+                                              Width="14" Height="14"/>
+                            <!-- Header -->
+                            <ContentPresenter x:Name="HeaderPart" Grid.Column="1" Content="{TemplateBinding Header}" 
+                                              Margin="6,0,0,0" VerticalAlignment="Center"
+                                              TextElement.Foreground="{TemplateBinding Foreground}"/>
+                            <!-- Checkmark (for IsCheckable items like Column Visibility) -->
+                            <TextBlock x:Name="CheckMark" Grid.Column="0" Text="&#xE73E;" FontFamily="Segoe MDL2 Assets" FontSize="12"
+                                       Foreground="{DynamicResource Theme.Accent}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       Visibility="Collapsed"/>
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsHighlighted" Value="True">
+                            <Setter TargetName="Bg" Property="Background" Value="{DynamicResource Theme.Hover.Background}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Bg" Property="Background" Value="{DynamicResource Theme.Pressed.Background}"/>
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="CheckMark" Property="Visibility" Value="Visible"/>
+                            <Setter TargetName="IconPart" Property="Visibility" Value="Collapsed"/>
+                        </Trigger>
+                        <Trigger Property="IsCheckable" Value="False">
+                            <Setter TargetName="CheckMark" Property="Visibility" Value="Collapsed"/>
+                        </Trigger>
+                        <Trigger Property="Icon" Value="{x:Null}">
+                            <Setter TargetName="IconPart" Property="Visibility" Value="Collapsed"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>    
 </ResourceDictionary>
 '@
 function New-AppResources {
@@ -1724,17 +1788,20 @@ function New-RowActionMenuItem {
 function Show-RowActionMenu {
     param([Parameter(Mandatory)][System.Windows.FrameworkElement]$Button,[Parameter(Mandatory)]$Monitor)
     $menu = [System.Windows.Controls.ContextMenu]::new()
+    
     $menu.Style = $Window.FindResource('ThemedContextMenuStyle')
-    $menu.Background = Get-ThemeBrush -Key 'Popup.Background'
-    $menu.BorderBrush = Get-ThemeBrush -Key 'Popup.Border'
-    $menu.BorderThickness = [System.Windows.Thickness]::new(1)
+    
     $menu.PlacementTarget = $Button
     $menu.Placement = [System.Windows.Controls.Primitives.PlacementMode]::MousePoint
+    
     [void]$menu.Items.Add((New-RowActionMenuItem -Header 'Reset' -IconData $script:GlobalActionIcons.Reset -Tag "$($Monitor.Id)|Reset"))
+    
     $pauseIcon = if ($Monitor.Paused) { $script:GlobalActionIcons.Resume } else { $script:GlobalActionIcons.Pause }
     $pauseText = if ($Monitor.Paused) { 'Resume' } else { 'Pause' }
     [void]$menu.Items.Add((New-RowActionMenuItem -Header $pauseText -IconData $pauseIcon -Tag "$($Monitor.Id)|Pause"))
+    
     [void]$menu.Items.Add((New-RowActionMenuItem -Header 'Remove' -IconData $script:GlobalActionIcons.Clear -Tag "$($Monitor.Id)|Remove"))
+    
     $menu.IsOpen = $true
 }
 function Invoke-ColumnVisibilityMenuItemClick {
@@ -1747,17 +1814,17 @@ function Invoke-ColumnVisibilityMenuItemClick {
 function Show-ColumnVisibilityMenu {
     param([Parameter(Mandatory)][System.Windows.FrameworkElement]$PlacementTarget)
     $menu = [System.Windows.Controls.ContextMenu]::new()
+    
     $menu.Style = $Window.FindResource('ThemedContextMenuStyle')
-    $menu.Background = Get-ThemeBrush -Key 'Popup.Background'
-    $menu.BorderBrush = Get-ThemeBrush -Key 'Popup.Border'
-    $menu.BorderThickness = [System.Windows.Thickness]::new(1)
+    
     $menu.PlacementTarget = $PlacementTarget
     $menu.Placement = [System.Windows.Controls.Primitives.PlacementMode]::MousePoint
+    
     foreach ($name in $script:TableColumnVisibility.Keys) {
         $item = [System.Windows.Controls.MenuItem]::new()
         $item.Header = $name
         $item.Tag = $name
-        $item.Foreground = Get-ThemeBrush -Key 'MenuItem.TextFill'
+        $item.Style = $Window.FindResource('ThemedContextMenuItemStyle')
         $item.IsCheckable = $true
         $item.IsChecked = [bool]$script:TableColumnVisibility[$name]
         $item.StaysOpenOnClick = $true
@@ -2451,7 +2518,13 @@ $TableGrid.Background = [System.Windows.Media.Brushes]::Transparent
 Initialize-DataGridActions
 Initialize-DataGridDragDrop
 $HostInput.Add_TextChanged({ $InputHint.Visibility = if ($HostInput.Text.Length) { 'Collapsed' } else { 'Visible' } })
-$AddButton.Add_Click({ [void](Add-Monitor -HostName $HostInput.Text) })
+$AddButton.Add_Click({ 
+        [void](Add-Monitor -HostName $HostInput.Text) 
+        if ($HostInputPanel.Visibility -eq 'Visible' -and $ToolbarPanel.Visibility -eq 'Collapsed') {
+            $Window.Height -= $HostInputPanel.ActualHeight
+            $HostInputPanel.Visibility = 'Collapsed'
+        }
+    })
 $LoadButton.Add_Click({ Load-Configuration })
 $SaveButton.Add_Click({
         try { Save-Configuration }
@@ -2495,6 +2568,15 @@ $Window.Add_KeyDown({
             Save-Configuration
             $e.Handled = $true
         }
+        elseif ($e.Key -eq [System.Windows.Input.Key]::N -and $ctrl) {
+            if ($ToolbarPanel.Visibility -eq 'Collapsed') {
+                $HostInputPanel.Visibility = 'Visible'
+                $Window.Height += $HostInputPanel.ActualHeight
+            }
+            $HostInput.Focus()
+            $HostInput.SelectAll()
+            $e.Handled = $true
+        }
         elseif ($e.Key -eq [System.Windows.Input.Key]::F8) {
             $nextMode = if ($script:ViewMode -eq 'Card') { 'Table' } else { 'Card' }
             Set-ViewMode -Mode $nextMode
@@ -2509,6 +2591,10 @@ $Window.Add_KeyDown({
             $e.Handled = $true
         }
         elseif ($e.Key -eq [System.Windows.Input.Key]::Escape) {
+            if ($HostInputPanel.Visibility -eq 'Visible' -and $ToolbarPanel.Visibility -eq 'Collapsed') {
+                $Window.Height -= $HostInputPanel.ActualHeight
+                $HostInputPanel.Visibility = 'Collapsed'
+            }
             $HostInput.Clear()
             $e.Handled = $true
         }
