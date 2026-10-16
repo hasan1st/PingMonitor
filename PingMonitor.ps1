@@ -2569,7 +2569,7 @@ $Window.Add_KeyDown({
             $e.Handled = $true
         }
         elseif ($e.Key -eq [System.Windows.Input.Key]::N -and $ctrl) {
-            if ($ToolbarPanel.Visibility -eq 'Collapsed') {
+            if ($ToolbarPanel.Visibility -eq 'Collapsed' -and $ToolbarPanel.Visibility -eq 'Collapsed') {
                 $HostInputPanel.Visibility = 'Visible'
                 $Window.Height += $HostInputPanel.ActualHeight
             }
