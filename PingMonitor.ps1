@@ -1504,16 +1504,16 @@ $script:OptionsDialogXaml = [xml]@'
                 <DropShadowEffect Color="DarkGray" Opacity="0.4" BlurRadius="3" ShadowDepth="1" Direction="270"/>
             </TextBlock.Effect>
         </TextBlock>
-        <TextBlock Grid.Row="6" Text="Interval (seconds)" Foreground="{DynamicResource Theme.Text.Primary}" VerticalAlignment="Center" Margin="0,5"/>
-        <TextBox x:Name="IntervalInput" Grid.Row="6" Grid.Column="1" Margin="0,5"/>
-        <TextBlock Grid.Row="7" Text="Timeout (milliseconds)" Foreground="{DynamicResource Theme.Text.Primary}" VerticalAlignment="Center" Margin="0,5"/>
-        <TextBox x:Name="TimeoutInput" Grid.Row="7" Grid.Column="1" Margin="0,5"/>
-        <TextBlock Grid.Row="8" Text="Buffer size (bytes)" Foreground="{DynamicResource Theme.Text.Primary}" VerticalAlignment="Center" Margin="0,5"/>
-        <TextBox x:Name="BufferInput" Grid.Row="8" Grid.Column="1" Margin="0,5"/>
-        <TextBlock Grid.Row="9" Text="TTL (hops)" Foreground="{DynamicResource Theme.Text.Primary}" VerticalAlignment="Center" Margin="0,5"/>
-        <TextBox x:Name="TtlInput" Grid.Row="9" Grid.Column="1" Margin="0,5"/>
-        <TextBlock Grid.Row="10" Text="History samples" Foreground="{DynamicResource Theme.Text.Primary}" VerticalAlignment="Center" Margin="0,5"/>
-        <TextBox x:Name="HistoryInput" Grid.Row="10" Grid.Column="1" Margin="0,5"/>
+        <TextBlock Grid.Row="6" Text="History samples" Foreground="{DynamicResource Theme.Text.Primary}" VerticalAlignment="Center" Margin="0,5"/>
+        <TextBox x:Name="HistoryInput" Grid.Row="6" Grid.Column="1" Margin="0,5"/>
+        <TextBlock Grid.Row="7" Text="Interval (seconds)" Foreground="{DynamicResource Theme.Text.Primary}" VerticalAlignment="Center" Margin="0,5"/>
+        <TextBox x:Name="IntervalInput" Grid.Row="7" Grid.Column="1" Margin="0,5"/>
+        <TextBlock Grid.Row="8" Text="Timeout (milliseconds)" Foreground="{DynamicResource Theme.Text.Primary}" VerticalAlignment="Center" Margin="0,5"/>
+        <TextBox x:Name="TimeoutInput" Grid.Row="8" Grid.Column="1" Margin="0,5"/>
+        <TextBlock Grid.Row="9" Text="Buffer size (bytes)" Foreground="{DynamicResource Theme.Text.Primary}" VerticalAlignment="Center" Margin="0,5"/>
+        <TextBox x:Name="BufferInput" Grid.Row="9" Grid.Column="1" Margin="0,5"/>
+        <TextBlock Grid.Row="10" Text="TTL (hops)" Foreground="{DynamicResource Theme.Text.Primary}" VerticalAlignment="Center" Margin="0,5"/>
+        <TextBox x:Name="TtlInput" Grid.Row="10" Grid.Column="1" Margin="0,5"/>
         <CheckBox x:Name="DontFragmentInput" Grid.Row="11" Grid.ColumnSpan="2" Content="Do not fragment packets" Foreground="{DynamicResource Theme.Text.Primary}" Margin="0,8,0,16"/>
         <StackPanel Grid.Row="12" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right">
             <Button x:Name="CancelButton" Content="Cancel" IsCancel="True" Style="{DynamicResource PrimaryButtonStyle}" MinWidth="80"/>
