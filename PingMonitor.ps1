@@ -13,33 +13,143 @@ param(
 )
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase
 $ExternalInvocation = $MyInvocation.CommandOrigin -eq 'Internal' -or $MyInvocation.InvocationName -eq '&'
+
+if (-not ('PingMonitor.MonitorModel' -as [type])) {
+    $monitorModelCode = @'
+using System;
+using System.Collections;
+using System.ComponentModel;
+using System.Reflection;
+namespace PingMonitor
+{
+    public sealed class MonitorModel : INotifyPropertyChanged
+    {
+        public event PropertyChangedEventHandler PropertyChanged;
+        private void SetProperty(ref object field, object value, string propertyName)
+        {
+            if (Object.Equals(field, value)) return;
+            field = value;
+            PropertyChangedEventHandler handler = PropertyChanged;
+            if (handler != null) handler(this, new PropertyChangedEventArgs(propertyName));
+        }
+        public MonitorModel(IDictionary values)
+        {
+            foreach (DictionaryEntry entry in values)
+            {
+                PropertyInfo property = GetType().GetProperty(Convert.ToString(entry.Key));
+                if (property == null) throw new ArgumentException("Unknown monitor property: " + entry.Key);
+                property.SetValue(this, entry.Value, null);
+            }
+        }
+        private object _Id;
+        public object Id { get { return _Id; } set { SetProperty(ref _Id, value, "Id"); } }
+        private object _Sequence;
+        public object Sequence { get { return _Sequence; } set { SetProperty(ref _Sequence, value, "Sequence"); } }
+        private object _HostName;
+        public object HostName { get { return _HostName; } set { SetProperty(ref _HostName, value, "HostName"); } }
+        private object _IsLiteralIp;
+        public object IsLiteralIp { get { return _IsLiteralIp; } set { SetProperty(ref _IsLiteralIp, value, "IsLiteralIp"); } }
+        private object _Controls;
+        public object Controls { get { return _Controls; } set { SetProperty(ref _Controls, value, "Controls"); } }
+        private object _History;
+        public object History { get { return _History; } set { SetProperty(ref _History, value, "History"); } }
+        private object _HistoryDisplay;
+        public object HistoryDisplay { get { return _HistoryDisplay; } set { SetProperty(ref _HistoryDisplay, value, "HistoryDisplay"); } }
+        private object _GraphElements;
+        public object GraphElements { get { return _GraphElements; } set { SetProperty(ref _GraphElements, value, "GraphElements"); } }
+        private object _LastResult;
+        public object LastResult { get { return _LastResult; } set { SetProperty(ref _LastResult, value, "LastResult"); } }
+        private object _DisplayIp;
+        public object DisplayIp { get { return _DisplayIp; } set { SetProperty(ref _DisplayIp, value, "DisplayIp"); } }
+        private object _DisplayLatency;
+        public object DisplayLatency { get { return _DisplayLatency; } set { SetProperty(ref _DisplayLatency, value, "DisplayLatency"); } }
+        private object _DisplayAvg;
+        public object DisplayAvg { get { return _DisplayAvg; } set { SetProperty(ref _DisplayAvg, value, "DisplayAvg"); } }
+        private object _DisplayMin;
+        public object DisplayMin { get { return _DisplayMin; } set { SetProperty(ref _DisplayMin, value, "DisplayMin"); } }
+        private object _DisplayMax;
+        public object DisplayMax { get { return _DisplayMax; } set { SetProperty(ref _DisplayMax, value, "DisplayMax"); } }
+        private object _DisplayDrop;
+        public object DisplayDrop { get { return _DisplayDrop; } set { SetProperty(ref _DisplayDrop, value, "DisplayDrop"); } }
+        private object _StatusBrush;
+        public object StatusBrush { get { return _StatusBrush; } set { SetProperty(ref _StatusBrush, value, "StatusBrush"); } }
+        private object _LatencyBrush;
+        public object LatencyBrush { get { return _LatencyBrush; } set { SetProperty(ref _LatencyBrush, value, "LatencyBrush"); } }
+        private object _LifetimeMin;
+        public object LifetimeMin { get { return _LifetimeMin; } set { SetProperty(ref _LifetimeMin, value, "LifetimeMin"); } }
+        private object _LifetimeMax;
+        public object LifetimeMax { get { return _LifetimeMax; } set { SetProperty(ref _LifetimeMax, value, "LifetimeMax"); } }
+        private object _DroppedPackets;
+        public object DroppedPackets { get { return _DroppedPackets; } set { SetProperty(ref _DroppedPackets, value, "DroppedPackets"); } }
+        private object _LastRtt;
+        public object LastRtt { get { return _LastRtt; } set { SetProperty(ref _LastRtt, value, "LastRtt"); } }
+        private object _StatsResetUtc;
+        public object StatsResetUtc { get { return _StatsResetUtc; } set { SetProperty(ref _StatsResetUtc, value, "StatsResetUtc"); } }
+        private object _Paused;
+        public object Paused { get { return _Paused; } set { SetProperty(ref _Paused, value, "Paused"); } }
+        private object _NextDueUtc;
+        public object NextDueUtc { get { return _NextDueUtc; } set { SetProperty(ref _NextDueUtc, value, "NextDueUtc"); } }
+        private object _AttemptId;
+        public object AttemptId { get { return _AttemptId; } set { SetProperty(ref _AttemptId, value, "AttemptId"); } }
+        private object _InFlight;
+        public object InFlight { get { return _InFlight; } set { SetProperty(ref _InFlight, value, "InFlight"); } }
+        private object _IsStopping;
+        public object IsStopping { get { return _IsStopping; } set { SetProperty(ref _IsStopping, value, "IsStopping"); } }
+        private object _GraphBarGap;
+        public object GraphBarGap { get { return _GraphBarGap; } set { SetProperty(ref _GraphBarGap, value, "GraphBarGap"); } }
+        private object _GraphBarWidth;
+        public object GraphBarWidth { get { return _GraphBarWidth; } set { SetProperty(ref _GraphBarWidth, value, "GraphBarWidth"); } }
+        private object _PowerShell;
+        public object PowerShell { get { return _PowerShell; } set { SetProperty(ref _PowerShell, value, "PowerShell"); } }
+        private object _AsyncResult;
+        public object AsyncResult { get { return _AsyncResult; } set { SetProperty(ref _AsyncResult, value, "AsyncResult"); } }
+    }
+}
+'@
+    Add-Type -TypeDefinition $monitorModelCode -ErrorAction Stop
+}
+
 #region 00.Config
 
 $script:AppUserModelId = 'HK.WPF.PingMonitor'
 
 $script:Config = [pscustomobject]@{
-    GraphWidth       = 198.0
-    GraphHeight      = 45.0
-    GraphMaxRttMs    = 300.0
-    GraphBarGap      = 2.0
-    GraphMinBarHeight= 5.0
-    GraphErrorBarHeight = 2.0
-    DragThresholdPx  = 5 
-    InsertBeforeWeight = 0.8
-    MaxConcurrentPings = 20
-    RttWarningMs     = 150
-    RttCriticalMs    = 250 
+    GraphWidth             = 198.0
+    GraphHeight            = 45.0
+    GraphMaxRttMs          = 300.0
+    GraphBarGap            = 2.0
+    GraphMinBarHeight      = 5.0
+    GraphErrorBarHeight    = 2.0
+    DragThresholdPx        = 5 
+    InsertBeforeWeight     = 0.8
+    MaxConcurrentPings     = 20
     ToolbarLabelWidthBreak = 462 
-    ScrollBarWidth   = 10
+    ScrollBarWidth         = 10
+}
+
+$script:RttSettings = [pscustomobject]@{
+    WarningMs = 150
+    CriticalMs = 250
+    Colors = [ordered]@{
+        Success  = '#10B981'
+        Warning  = '#F59E0B'
+        Critical = '#DC2626'
+        Failure  = '#EF4444'
+        Neutral  = '#94A3B8'
+    }
+}
+$script:RttColors = @{}
+foreach ($name in $script:RttSettings.Colors.Keys) {
+    $script:RttColors[$name] = [System.Windows.Media.ColorConverter]::ConvertFromString($script:RttSettings.Colors[$name])
 }
 
 function New-DefaultSettings {
     param(
-        [int]$Interval     = 4,
-        [int]$Timeout      = 1000,
-        [int]$BufferSize   = 32,
+        [int]$Interval = 4,
+        [int]$Timeout = 1000,
+        [int]$BufferSize = 32,
         [int]$HistoryDepth = 7,
-        [int]$Ttl          = 128,
+        [int]$Ttl = 128,
         [bool]$DontFragment = $false
     )
     [pscustomobject]@{
@@ -100,7 +210,7 @@ catch {
     Write-Verbose "AppUserModelID could not be set: $($_.Exception.Message)"
 }
 function Set-ConsoleWindowState {
-    param([Parameter(Mandatory)][ValidateSet('restored','hidden')][string]$State)
+    param([Parameter(Mandatory)][ValidateSet('restored', 'hidden')][string]$State)
     try {
         $handle = [PingMonitor.NativeMethods]::GetConsoleWindow()
         if ($handle -ne [IntPtr]::Zero) {
@@ -116,12 +226,12 @@ function Set-ConsoleWindowState {
 #region 02.Theme.Base
 
 $script:ThemeContractKeys = @(
-    'Window.Background', 'Toolbar.Background', 'Divider', 'Border',
+    'Window.Background', 'Toolbar.Background', 'Divider', 'Border', 'Overlay.Background', 'Shadow.Color',
     'Card.Background', 'Card.Border',
     'Text.Primary', 'Text.Secondary', 'Text.Muted',
-    'Accent', 'Accent.Hover', 'Accent.Pressed',
+    'Accent', 'Accent.Hover', 'Accent.Pressed', 'Text.OnAccent',
     'Hover.Background', 'Pressed.Background',
-    'Status.Success', 'Status.Warning', 'Status.Critical', 'Status.Failure', 'Status.Neutral', 'Status.Question',
+    'Feedback.Warning', 'Feedback.Error', 'Feedback.Question',
     'Brand.StatusDot',
     'Caption.Foreground', 'Caption.Hover', 'Caption.Pressed', 'Caption.CloseHover', 'Caption.ClosePressed',
     'MenuItem.IconFill', 'MenuItem.TextFill',
@@ -140,6 +250,10 @@ function New-ThemeResourceDictionary {
     param([Parameter(Mandatory)][hashtable]$Colors)
     $dict = [System.Windows.ResourceDictionary]::new()
     foreach ($key in $Colors.Keys) {
+        if ($key -eq 'Shadow.Color') {
+            $dict["Theme.$key"] = $Colors[$key]
+            continue
+        }
         $brush = [System.Windows.Media.SolidColorBrush]::new($Colors[$key])
         if ($brush.CanFreeze) { $brush.Freeze() }
         $dict["Theme.$key"] = $brush
@@ -356,8 +470,6 @@ $script:BaseStyleXaml = @'
             </Trigger>
         </Style.Triggers>
     </Style>
-
-
     <Style x:Key="ThemedScrollBarThumb" TargetType="Thumb">
         <Setter Property="Background" Value="{DynamicResource Theme.Scrollbar.Thumb}"/>
         <Setter Property="Template">
@@ -533,7 +645,7 @@ $script:BaseStyleXaml = @'
                             Padding="{TemplateBinding Padding}"
                             SnapsToDevicePixels="True">
                         <Border.Effect>
-                            <DropShadowEffect BlurRadius="14" ShadowDepth="3" Opacity="0.15" Color="#000000" Direction="270"/>
+                            <DropShadowEffect BlurRadius="14" ShadowDepth="3" Opacity="0.15" Color="{DynamicResource Theme.Shadow.Color}" Direction="270"/>
                         </Border.Effect>
                         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                             <ItemsPresenter />
@@ -605,6 +717,13 @@ function New-AppResources {
     try {
         $baseDict = [System.Windows.Markup.XamlReader]::Load($reader)
         $baseDict.MergedDictionaries.Add((New-ThemeResourceDictionary -Colors $Colors))
+        $rttDict = [System.Windows.ResourceDictionary]::new()
+        foreach ($name in $script:RttColors.Keys) {
+            $brush = [System.Windows.Media.SolidColorBrush]::new($script:RttColors[$name])
+            if ($brush.CanFreeze) { $brush.Freeze() }
+            $rttDict["Rtt.$name"] = $brush
+        }
+        $baseDict.MergedDictionaries.Add($rttDict)
         return $baseDict
     }
     finally {
@@ -612,14 +731,18 @@ function New-AppResources {
     }
 }
 function Set-AppTheme {
-    param([Parameter(Mandatory)][ValidateSet('Light', 'Dark', 'System')][string]$ThemeName)
+    param([Parameter(Mandatory)][string]$ThemeName)
     if (-not $script:ThemeRegistry.Contains($ThemeName)) { return $false }
     $effectiveTheme = if ($ThemeName -eq 'System') { Get-SystemThemeName } else { $ThemeName }
-    $colors = & $script:ThemeRegistry[$ThemeName]
+    $colors = Resolve-ThemePalette -ThemeName $ThemeName
     Test-ThemeContract -Colors $colors -ThemeName $effectiveTheme
     $colorDict = $script:AppResources.MergedDictionaries | Where-Object { $_.Contains('Theme.Window.Background') } | Select-Object -First 1
     if (-not $colorDict) { return $false }
     foreach ($key in $colors.Keys) {
+        if ($key -eq 'Shadow.Color') {
+            $colorDict["Theme.$key"] = $colors[$key]
+            continue
+        }
         $brush = [System.Windows.Media.SolidColorBrush]::new($colors[$key])
         if ($brush.CanFreeze) { $brush.Freeze() }
         $colorDict["Theme.$key"] = $brush
@@ -637,13 +760,13 @@ function Set-AppTheme {
 }
 function Register-SystemThemeWatcher {
     if ($script:SystemThemeWatcher -or -not $Window) { return }
-    $script:SystemThemeWatcher = [Microsoft.Win32.UserPreferenceChangedEventHandler]{
+    $script:SystemThemeWatcher = [Microsoft.Win32.UserPreferenceChangedEventHandler] {
         param($sender, $e)
         if ($script:ThemeName -ne 'System' -or -not $Window) { return }
-        $Window.Dispatcher.BeginInvoke([Action]{
-            $effectiveTheme = Get-SystemThemeName
-            if ($effectiveTheme -ne $script:EffectiveThemeName) { [void](Set-AppTheme -ThemeName 'System') }
-        }) | Out-Null
+        $Window.Dispatcher.BeginInvoke([Action] {
+                $effectiveTheme = Get-SystemThemeName
+                if ($effectiveTheme -ne $script:EffectiveThemeName) { [void](Set-AppTheme -ThemeName 'System') }
+            }) | Out-Null
     }
     [Microsoft.Win32.SystemEvents]::add_UserPreferenceChanged($script:SystemThemeWatcher)
 }
@@ -652,87 +775,82 @@ function Unregister-SystemThemeWatcher {
     [Microsoft.Win32.SystemEvents]::remove_UserPreferenceChanged($script:SystemThemeWatcher)
     $script:SystemThemeWatcher = $null
 }
-function Get-LightThemeColors {
-    $c = [System.Windows.Media.Color]
-    @{
-        'Window.Background'   = $c::FromRgb(0xF3, 0xF6, 0xFA)
-        'Toolbar.Background'  = $c::FromRgb(0xFF, 0xFF, 0xFF)
-        'Divider'             = $c::FromRgb(0xE3, 0xE7, 0xEC)
-        'Border'              = $c::FromRgb(0xD9, 0xE0, 0xE8)
-        'Card.Background'     = $c::FromRgb(0xFF, 0xFF, 0xFF)
-        'Card.Border'         = $c::FromRgb(0xE2, 0xE8, 0xF0)
-        'Text.Primary'        = $c::FromRgb(0x1F, 0x29, 0x37)
-        'Text.Secondary'      = $c::FromRgb(0x64, 0x74, 0x8B)
-        'Text.Muted'          = $c::FromRgb(0x94, 0xA3, 0xB8)
-        'Accent'              = $c::FromRgb(0x25, 0x63, 0xEB)
-        'Accent.Hover'        = $c::FromRgb(0x1D, 0x4E, 0xD8)
-        'Accent.Pressed'      = $c::FromRgb(0x1E, 0x40, 0xAF)
-        'Hover.Background'    = $c::FromRgb(0xF0, 0xF4, 0xF8)
-        'Pressed.Background'  = $c::FromRgb(0xE2, 0xE8, 0xF0)
-        'Status.Success'      = $c::FromRgb(0x10, 0xB9, 0x81)
-        'Status.Warning'      = $c::FromRgb(0xF5, 0x9E, 0x0B)
-        'Status.Critical'     = $c::FromRgb(0xDC, 0x26, 0x26)
-        'Status.Failure'      = $c::FromRgb(0xEF, 0x44, 0x44)
-        'Status.Neutral'      = $c::FromRgb(0x94, 0xA3, 0xB8)
-        'Status.Question'     = $c::FromRgb(0x7C, 0x3A, 0xED)
-        'Brand.StatusDot'     = $c::FromRgb(0x22, 0xC5, 0x5E)
-        'Caption.Foreground'  = $c::FromRgb(0x1F, 0x29, 0x37)
-        'Caption.Hover'       = $c::FromRgb(0xE5, 0xE5, 0xE5)
-        'Caption.Pressed'     = $c::FromRgb(0xCC, 0xCC, 0xCC)
-        'Caption.CloseHover'  = $c::FromRgb(0xC4, 0x2B, 0x1C)
-        'Caption.ClosePressed'= $c::FromRgb(0xB3, 0x2A, 0x1C)
-        'MenuItem.IconFill'   = $c::FromRgb(0x47, 0x55, 0x69)
-        'MenuItem.TextFill'   = $c::FromRgb(0x1F, 0x29, 0x37)
-        'Popup.Background'    = $c::FromRgb(0xFF, 0xFF, 0xFF)
-        'Popup.Border'        = $c::FromRgb(0xD9, 0xE0, 0xE8)
-        'MessageBox.Background'= $c::FromRgb(0xFF, 0xFF, 0xFF)
-        'MessageBox.Border'   = $c::FromRgb(0x9C, 0xA3, 0xAF)
-        'Scrollbar.Thumb'     = $c::FromRgb(0xC7, 0xCE, 0xD8)
-        'Scrollbar.ThumbHover'= $c::FromRgb(0xA8, 0xB3, 0xC2)
+$script:ThemeDefinitions = [ordered]@{
+    Light = @{
+        'Window.Background' = '#F3F6FA'
+        'Overlay.Background' = '#99000000'
+        'Shadow.Color' = '#000000'
+        'Text.OnAccent' = '#FFFFFF'
+        'Toolbar.Background' = '#FFFFFF'
+        'Divider' = '#E3E7EC'
+        'Border' = '#D9E0E8'
+        'Card.Background' = '#FFFFFF'
+        'Card.Border' = '#E2E8F0'
+        'Text.Primary' = '#1F2937'
+        'Text.Secondary' = '#64748B'
+        'Text.Muted' = '#94A3B8'
+        'Accent' = '#2563EB'
+        'Accent.Hover' = '#1D4ED8'
+        'Accent.Pressed' = '#1E40AF'
+        'Hover.Background' = '#F0F4F8'
+        'Pressed.Background' = '#E2E8F0'
+        'Feedback.Warning' = '#F59E0B'
+        'Feedback.Error' = '#DC2626'
+        'Feedback.Question' = '#7C3AED'
+        'Brand.StatusDot' = '#22C55E'
+        'Caption.Foreground' = '#1F2937'
+        'Caption.Hover' = '#E5E5E5'
+        'Caption.Pressed' = '#CCCCCC'
+        'Caption.CloseHover' = '#C42B1C'
+        'Caption.ClosePressed' = '#B32A1C'
+        'MenuItem.IconFill' = '#475569'
+        'MenuItem.TextFill' = '#1F2937'
+        'Popup.Background' = '#FFFFFF'
+        'Popup.Border' = '#D9E0E8'
+        'MessageBox.Background' = '#FFFFFF'
+        'MessageBox.Border' = '#9CA3AF'
+        'Scrollbar.Thumb' = '#C7CED8'
+        'Scrollbar.ThumbHover' = '#A8B3C2'
+    }
+    Dark  = @{
+        'Window.Background' = '#151A21'
+        'Overlay.Background' = '#99000000'
+        'Shadow.Color' = '#000000'
+        'Text.OnAccent' = '#FFFFFF'
+        'Toolbar.Background' = '#1E252E'
+        'Divider' = '#2E3742'
+        'Border' = '#333D49'
+        'Card.Background' = '#1E252E'
+        'Card.Border' = '#2E3742'
+        'Text.Primary' = '#E5E9F0'
+        'Text.Secondary' = '#9CA7B4'
+        'Text.Muted' = '#6B7684'
+        'Accent' = '#3B82F6'
+        'Accent.Hover' = '#60A5FA'
+        'Accent.Pressed' = '#2563EB'
+        'Hover.Background' = '#27303B'
+        'Pressed.Background' = '#303A46'
+        'Feedback.Warning' = '#FBBF24'
+        'Feedback.Error' = '#F87171'
+        'Feedback.Question' = '#A18AFA'
+        'Brand.StatusDot' = '#4ADE80'
+        'Caption.Foreground' = '#E5E9F0'
+        'Caption.Hover' = '#333D49'
+        'Caption.Pressed' = '#3F4A58'
+        'Caption.CloseHover' = '#C42B1C'
+        'Caption.ClosePressed' = '#B32A1C'
+        'MenuItem.IconFill' = '#B0BAC6'
+        'MenuItem.TextFill' = '#E5E9F0'
+        'Popup.Background' = '#1E252E'
+        'Popup.Border' = '#333D49'
+        'MessageBox.Background' = '#2E3947'
+        'MessageBox.Border' = '#6B7684'
+        'Scrollbar.Thumb' = '#45505D'
+        'Scrollbar.ThumbHover' = '#5A6674'
     }
 }
-#endregion
-#region 04.Theme.Dark
+$script:ThemeRegistry = [ordered]@{ Light = $script:ThemeDefinitions.Light; Dark = $script:ThemeDefinitions.Dark; System = $null }
 
-function Get-DarkThemeColors {
-    $c = [System.Windows.Media.Color]
-    @{
-        'Window.Background'   = $c::FromRgb(0x15, 0x1A, 0x21)
-        'Toolbar.Background'  = $c::FromRgb(0x1E, 0x25, 0x2E)
-        'Divider'             = $c::FromRgb(0x2E, 0x37, 0x42)
-        'Border'              = $c::FromRgb(0x33, 0x3D, 0x49)
-        'Card.Background'     = $c::FromRgb(0x1E, 0x25, 0x2E)
-        'Card.Border'         = $c::FromRgb(0x2E, 0x37, 0x42)
-        'Text.Primary'        = $c::FromRgb(0xE5, 0xE9, 0xF0)
-        'Text.Secondary'      = $c::FromRgb(0x9C, 0xA7, 0xB4)
-        'Text.Muted'          = $c::FromRgb(0x6B, 0x76, 0x84)
-        'Accent'              = $c::FromRgb(0x3B, 0x82, 0xF6)
-        'Accent.Hover'        = $c::FromRgb(0x60, 0xA5, 0xFA)
-        'Accent.Pressed'      = $c::FromRgb(0x25, 0x63, 0xEB)
-        'Hover.Background'    = $c::FromRgb(0x27, 0x30, 0x3B)
-        'Pressed.Background'  = $c::FromRgb(0x30, 0x3A, 0x46)
-        'Status.Success'      = $c::FromRgb(0x34, 0xD3, 0x99)
-        'Status.Warning'      = $c::FromRgb(0xFB, 0xBF, 0x24)
-        'Status.Critical'     = $c::FromRgb(0xF8, 0x71, 0x71)
-        'Status.Failure'      = $c::FromRgb(0xF8, 0x71, 0x71)
-        'Status.Neutral'      = $c::FromRgb(0x6B, 0x76, 0x84)
-        'Status.Question'     = $c::FromRgb(0xA1, 0x8A, 0xFA)
-        'Brand.StatusDot'     = $c::FromRgb(0x4A, 0xDE, 0x80)
-        'Caption.Foreground'  = $c::FromRgb(0xE5, 0xE9, 0xF0)
-        'Caption.Hover'       = $c::FromRgb(0x33, 0x3D, 0x49)
-        'Caption.Pressed'     = $c::FromRgb(0x3F, 0x4A, 0x58)
-        'Caption.CloseHover'  = $c::FromRgb(0xC4, 0x2B, 0x1C)
-        'Caption.ClosePressed'= $c::FromRgb(0xB3, 0x2A, 0x1C)
-        'MenuItem.IconFill'   = $c::FromRgb(0xB0, 0xBA, 0xC6)
-        'MenuItem.TextFill'   = $c::FromRgb(0xE5, 0xE9, 0xF0)
-        'Popup.Background'    = $c::FromRgb(0x1E, 0x25, 0x2E)
-        'Popup.Border'        = $c::FromRgb(0x33, 0x3D, 0x49)
-        'MessageBox.Background'= $c::FromRgb(0x2E, 0x39, 0x47)
-        'MessageBox.Border'   = $c::FromRgb(0x6B, 0x76, 0x84)
-        'Scrollbar.Thumb'     = $c::FromRgb(0x45, 0x50, 0x5D)
-        'Scrollbar.ThumbHover'= $c::FromRgb(0x5A, 0x66, 0x74)
-    }
-}
 function Get-SystemThemeName {
     try {
         $value = Get-ItemPropertyValue -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize' -Name 'AppsUseLightTheme' -ErrorAction Stop
@@ -741,10 +859,18 @@ function Get-SystemThemeName {
     }
     catch { return 'Light' }
 }
-$script:ThemeRegistry = [ordered]@{
-    'Light'  = { Get-LightThemeColors }
-    'Dark'   = { Get-DarkThemeColors }
-    'System' = { if ((Get-SystemThemeName) -eq 'Dark') { Get-DarkThemeColors } else { Get-LightThemeColors } }
+function Resolve-ThemePalette {
+    param([Parameter(Mandatory)][string]$ThemeName)
+    $effectiveName = if ($ThemeName -eq 'System') { Get-SystemThemeName } else { $ThemeName }
+    if (-not $script:ThemeRegistry.Contains($effectiveName) -or $null -eq $script:ThemeRegistry[$effectiveName]) {
+        throw "Theme '$ThemeName' is not registered or has no palette."
+    }
+    $palette = $script:ThemeRegistry[$effectiveName]
+    $colors = @{}
+    foreach ($key in $palette.Keys) {
+        $colors[$key] = [System.Windows.Media.ColorConverter]::ConvertFromString([string]$palette[$key])
+    }
+    return $colors
 }
 #endregion
 #region 10.Views.Common
@@ -802,7 +928,7 @@ $script:MessageBoxXaml = [xml]@'
     <Border Background="{DynamicResource Theme.MessageBox.Background}" BorderBrush="{DynamicResource Theme.MessageBox.Border}"
         BorderThickness="1" CornerRadius="12" Padding="24" Margin="10">
         <Border.Effect>
-            <DropShadowEffect Color="#000000" BlurRadius="14" ShadowDepth="4" Opacity="0.12" />
+            <DropShadowEffect Color="{DynamicResource Theme.Shadow.Color}" BlurRadius="14" ShadowDepth="4" Opacity="0.12" />
         </Border.Effect>
         <StackPanel Width="400">
             <StackPanel Orientation="Horizontal" VerticalAlignment="Top" Margin="0,0,0,14">
@@ -810,16 +936,16 @@ $script:MessageBoxXaml = [xml]@'
                 <TextBlock Name="TitleTxt" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource Theme.Text.Primary}" Margin="0,0,0,12" />
             </StackPanel>
             <TextBlock Name="MessageTxt" FontSize="14" Foreground="{DynamicResource Theme.Text.Secondary}" TextWrapping="Wrap" Margin="44,0,0,0"/>
-            <Button Name="OKButton" Content="OK" Height="34" HorizontalAlignment="Right" Margin="0,20,0,0" Background="{DynamicResource Theme.Accent}" Foreground="White" BorderThickness="0" FontWeight="SemiBold" IsDefault="True" IsCancel="True" Style="{DynamicResource ActionButtonStyle}"/>
+            <Button Name="OKButton" Content="OK" Height="34" HorizontalAlignment="Right" Margin="0,20,0,0" Background="{DynamicResource Theme.Accent}" Foreground="{DynamicResource Theme.Text.OnAccent}" BorderThickness="0" FontWeight="SemiBold" IsDefault="True" IsCancel="True" Style="{DynamicResource ActionButtonStyle}"/>
         </StackPanel>
     </Border>
 </Window>
 '@
 $script:MessageBoxIconMap = @{
     Information = @{ Glyph = [char]0xE946; ColorKey = 'Accent' }
-    Warning     = @{ Glyph = [char]0xE7BA; ColorKey = 'Status.Warning' }
-    Error       = @{ Glyph = [char]0xE783; ColorKey = 'Status.Critical' }
-    Question    = @{ Glyph = [char]0xE9CE; ColorKey = 'Status.Question' }
+    Warning     = @{ Glyph = [char]0xE7BA; ColorKey = 'Feedback.Warning' }
+    Error       = @{ Glyph = [char]0xE783; ColorKey = 'Feedback.Error' }
+    Question    = @{ Glyph = [char]0xE9CE; ColorKey = 'Feedback.Question' }
 }
 function Show-MessageBox {
     param(
@@ -863,7 +989,7 @@ $script:MainWindowXaml = [xml]@'
         <Border x:Name="TitleBar" Grid.Row="0" Height="32" Background="{DynamicResource Theme.Toolbar.Background}" BorderBrush="{DynamicResource Theme.Divider}" BorderThickness="0,0,0,1">
             <DockPanel>
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                    <Button x:Name="ModeToggleButton" Content="&#xE70E;" ToolTip="Compact mode (F9)" Style="{DynamicResource CaptionButtonStyle}"/>
+                    <Button x:Name="ModeToggleButton" Content="&#xE70E;" ToolTip="Compact mode (F9)" Style="{DynamicResource CaptionButtonStyle}" Width="34"/>
                     <Button x:Name="TitleMinimizeButton" Content="&#xE921;" ToolTip="Minimize" Style="{DynamicResource CaptionButtonStyle}"/>
                     <Button x:Name="TitleMaximizeButton" Content="&#xE922;" ToolTip="Maximize" Style="{DynamicResource CaptionButtonStyle}"/>
                     <Button x:Name="TitleCloseButton" Content="&#xE8BB;" ToolTip="Close" Style="{DynamicResource CaptionCloseButtonStyle}"/>
@@ -874,7 +1000,7 @@ $script:MainWindowXaml = [xml]@'
         </Border>
         <Border x:Name="ToolbarPanel" Grid.Row="1" Background="{DynamicResource Theme.Toolbar.Background}" BorderBrush="{DynamicResource Theme.Divider}" BorderThickness="0,0,0,1" Padding="1,8">
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="PM" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource Theme.Accent}" VerticalAlignment="Center" Margin="13,0,8,0"/>
+                    <TextBlock Text="" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource Theme.Accent}" VerticalAlignment="Center" Margin="13,0,8,0"/>
                     <Button x:Name="LoadButton" Style="{DynamicResource PrimaryButtonStyle}" ToolTip="Load configuration (F2)">
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                             <Path Data="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" Width="16" Height="16" Stretch="Uniform" SnapsToDevicePixels="True"/>
@@ -960,6 +1086,9 @@ $script:MainWindowXaml = [xml]@'
                     CanUserResizeColumns="True" CanUserSortColumns="False" HeadersVisibility="Column"
                     RowHeaderWidth="0" GridLinesVisibility="None" SelectionMode="Single"
                     SelectionUnit="FullRow" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
+                    EnableRowVirtualization="True" EnableColumnVirtualization="True"
+                    VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
+                    ScrollViewer.CanContentScroll="True"
                     Background="Transparent" Foreground="{DynamicResource Theme.Text.Primary}"
                     BorderThickness="0" RowHeight="32" ColumnHeaderHeight="32" AllowDrop="True"
                     SnapsToDevicePixels="True" UseLayoutRounding="True">
@@ -1001,12 +1130,12 @@ $script:MainWindowXaml = [xml]@'
                         </Style>
                     </DataGrid.Resources>
                     <DataGrid.Columns>
-                        <DataGridTemplateColumn Header="Status" SortMemberPath="Status" Width="56">
+                        <DataGridTemplateColumn Header="" SortMemberPath="Status" Width="50">
                             <DataGridTemplateColumn.CellTemplate><DataTemplate>
                                 <Ellipse Width="10" Height="10" Fill="{Binding StatusBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </DataTemplate></DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTemplateColumn Header="Host" SortMemberPath="HostName" MinWidth="180" Width="240" HeaderStyle="{StaticResource LeftHeaderStyle}">
+                        <DataGridTemplateColumn Header="Host" SortMemberPath="HostName" MinWidth="120" Width="180" HeaderStyle="{StaticResource LeftHeaderStyle}">
                             <DataGridTemplateColumn.CellTemplate><DataTemplate>
                                 <TextBlock Text="{Binding HostName}" FontSize="13" Foreground="{DynamicResource Theme.Text.Primary}"
                                     TextTrimming="CharacterEllipsis" ToolTip="{Binding HostName}" Margin="8,0"
@@ -1025,6 +1154,12 @@ $script:MainWindowXaml = [xml]@'
                                     HorizontalAlignment="Center" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                             </DataTemplate></DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="Drop" SortMemberPath="Drop" Width="Auto">
+                            <DataGridTemplateColumn.CellTemplate><DataTemplate>
+                                <TextBlock Text="{Binding DisplayDrop}" FontSize="11" Foreground="{DynamicResource Theme.Text.Muted}"
+                                    HorizontalAlignment="Center" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                            </DataTemplate></DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>                        
                         <DataGridTemplateColumn Header="Avg" SortMemberPath="Avg" Width="Auto">
                             <DataGridTemplateColumn.CellTemplate><DataTemplate>
                                 <TextBlock Text="{Binding DisplayAvg}" FontSize="11" Foreground="{DynamicResource Theme.Text.Muted}"
@@ -1040,12 +1175,6 @@ $script:MainWindowXaml = [xml]@'
                         <DataGridTemplateColumn Header="Max" SortMemberPath="Max" Width="Auto">
                             <DataGridTemplateColumn.CellTemplate><DataTemplate>
                                 <TextBlock Text="{Binding DisplayMax}" FontSize="11" Foreground="{DynamicResource Theme.Text.Muted}"
-                                    HorizontalAlignment="Center" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                            </DataTemplate></DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
-                        <DataGridTemplateColumn Header="Drop" SortMemberPath="Drop" Width="Auto">
-                            <DataGridTemplateColumn.CellTemplate><DataTemplate>
-                                <TextBlock Text="{Binding DisplayDrop}" FontSize="11" Foreground="{DynamicResource Theme.Text.Muted}"
                                     HorizontalAlignment="Center" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                             </DataTemplate></DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
@@ -1072,7 +1201,8 @@ $script:MainWindowXaml = [xml]@'
                 <TextBlock Text="F2 Load   F3 / Ctrl+S Save   F4 Clear   Ctrl+, Options   F8 View   F9 Compact" Foreground="{DynamicResource Theme.Text.Muted}" HorizontalAlignment="Right"/>
             </DockPanel>
         </Border>
-        <Border x:Name="ModalOverlay" Grid.Row="0" Grid.RowSpan="5" Background="#99000000" Visibility="Collapsed" IsHitTestVisible="False"/>
+        <Border x:Name="ModalOverlay" Grid.Row="0" Grid.RowSpan="5" Background="{DynamicResource Theme.Overlay.Background}" Visibility="Collapsed" IsHitTestVisible="False"/>
+        <Path x:Name="ResizeGrip" Grid.Row="0" Grid.RowSpan="5" Width="12" Height="12" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,4,4" Data="M5,11 L11,5 M9,11 L11,9" Stroke="{DynamicResource Theme.Text.Muted}" StrokeThickness="1.25" StrokeStartLineCap="Round" StrokeEndLineCap="Round" IsHitTestVisible="False"/>
     </Grid>
 </Window>
 '@
@@ -1080,8 +1210,18 @@ function Update-WindowMinSize {
     if (-not $Window -or -not $ContentGrid -or -not $MonitorScroll) { return }
     $Window.UpdateLayout()
 
-    $cardWidth = [double]$script:MonitorCardFootprint.Width
-    $cardHeight = [double]$script:MonitorCardFootprint.Height
+    $firstMonitor = $script:Monitors.Values | Select-Object -First 1
+    if ($firstMonitor -and $firstMonitor.Controls.Card) {
+        $card = $firstMonitor.Controls.Card
+        $card.Measure([System.Windows.Size]::new([double]::PositiveInfinity, [double]::PositiveInfinity))
+        $cardWidth = [double]$card.DesiredSize.Width
+        $cardHeight = [double]$card.DesiredSize.Height
+    }
+    else {
+        $cardWidth = [double]$script:MonitorCardFootprint.Width
+        $cardHeight = [double]$script:MonitorCardFootprint.Height
+    }
+
     $scrollbar = [double]$script:Config.ScrollBarWidth
     $scrollMargin = 4.0
 
@@ -1159,14 +1299,25 @@ function Set-ViewMode {
         $TableViewContainer.Visibility = 'Visible'
         $ViewToggleText.Text = 'Cards'
         $ViewToggleIcon.Data = [System.Windows.Media.Geometry]::Parse('M3,3H11V13H3V3M3,15H11V21H3V15M13,3H21V9H13V3M13,11H21V21H13V11Z')
-        $ViewToggleButton.ToolTip = 'Switch to card view'
+        $ViewToggleButton.ToolTip = 'Switch to card view (F8)'
     }
     else {
         $TableViewContainer.Visibility = 'Collapsed'
         $CardViewContainer.Visibility = 'Visible'
         $ViewToggleText.Text = 'Table'
         $ViewToggleIcon.Data = [System.Windows.Media.Geometry]::Parse('M3,3H21V21H3V3M5,5V8H19V5H5M5,10V14H19V10H5M5,16V19H19V16H5Z')
-        $ViewToggleButton.ToolTip = 'Switch to table view'
+        $ViewToggleButton.ToolTip = 'Switch to table view (F8)'
+    }
+    if ($Mode -eq 'Table') {
+        foreach ($monitor in $script:Monitors.Values) {
+            if ($monitor.LastResult) { Update-MonitorRow -Monitor $monitor -Result $monitor.LastResult }
+        }
+    }
+    else {
+        foreach ($monitor in $script:Monitors.Values) {
+            if ($monitor.LastResult) { Update-MonitorCardDisplay -Monitor $monitor -Result $monitor.LastResult }
+            else { Update-MonitorGraph -Monitor $monitor }
+        }
     }
     Update-WindowMinSize
 }
@@ -1175,16 +1326,16 @@ function Set-ViewMode {
 
 $script:MonitorCardXaml = [xml]@'
 <Border xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Width="222" Height="148" Margin="4" Padding="0" Background="{DynamicResource Theme.Card.Background}" BorderBrush="{DynamicResource Theme.Card.Border}" BorderThickness="1" CornerRadius="10">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Width="222" Height="Auto" Margin="4" Padding="0" Background="{DynamicResource Theme.Card.Background}" BorderBrush="{DynamicResource Theme.Card.Border}" BorderThickness="1" CornerRadius="10">
     <Border.Effect>
-        <DropShadowEffect BlurRadius="12" ShadowDepth="2" Opacity="0.06" Color="#000000"/>
+        <DropShadowEffect BlurRadius="12" ShadowDepth="2" Opacity="0.06" Color="{DynamicResource Theme.Shadow.Color}"/>
     </Border.Effect>
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="4"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
-        <Border x:Name="StatusAccent" Grid.Column="0" Background="{DynamicResource Theme.Status.Neutral}" CornerRadius="10,0,0,10"/>
+        <Border x:Name="StatusAccent" Grid.Column="0" Background="{DynamicResource Rtt.Neutral}" CornerRadius="10,0,0,10"/>
         <Grid Grid.Column="1" Margin="12,10">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
@@ -1211,15 +1362,15 @@ $script:MonitorCardXaml = [xml]@'
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock x:Name="LatencyText" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource Theme.Status.Success}" VerticalAlignment="Center"/>
-                <TextBlock x:Name="AvgText" Grid.Column="1" FontSize="11" Foreground="{DynamicResource Theme.Text.Muted}" VerticalAlignment="Center" TextAlignment="Right"/>
+                <TextBlock x:Name="LatencyText" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource Rtt.Success}" VerticalAlignment="Center"/>
+                <TextBlock x:Name="DropText" Grid.Column="1" FontSize="11" Foreground="{DynamicResource Theme.Text.Muted}" VerticalAlignment="Center" TextAlignment="Right" Text="Drop: 0"/>
             </Grid>
             <Grid Grid.Row="2">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
-                <Viewbox Grid.Row="0" Stretch="Fill" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="0,2,0,0">
+                <Viewbox x:Name="GraphViewbox" Grid.Row="0" Stretch="Fill" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="0,2,0,0">
                     <Canvas x:Name="GraphCanvas" Width="198" Height="45" Background="Transparent">
                         <Line X1="0" Y1="0" X2="198" Y2="0" Stroke="{DynamicResource Theme.Border}" StrokeThickness="0.75"/>
                         <Line X1="0" Y1="15" X2="198" Y2="15" Stroke="{DynamicResource Theme.Card.Border}" StrokeThickness="0.75"/>
@@ -1228,14 +1379,14 @@ $script:MonitorCardXaml = [xml]@'
                         <Canvas x:Name="GraphBars" Width="240" Height="60" Background="Transparent"/>
                     </Canvas>
                 </Viewbox>
-                <Grid Grid.Row="1" Margin="0,2,0,0">
+                <Grid x:Name="StatsGrid" Grid.Row="1" Margin="0,2,0,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock x:Name="MinText" FontSize="10" Foreground="{DynamicResource Theme.Text.Muted}"/>
-                    <TextBlock x:Name="DropText" Grid.Column="1" FontSize="10" Foreground="{DynamicResource Theme.Text.Muted}" TextAlignment="Center" Text="Drop: 0"/>
+                    <TextBlock x:Name="AvgText" Grid.Column="1" FontSize="10" Foreground="{DynamicResource Theme.Text.Muted}" TextAlignment="Center"/>
                     <TextBlock x:Name="MaxText" Grid.Column="2" FontSize="10" Foreground="{DynamicResource Theme.Text.Muted}" TextAlignment="Right"/>
                 </Grid>
             </Grid>
@@ -1243,6 +1394,23 @@ $script:MonitorCardXaml = [xml]@'
     </Grid>
 </Border>
 '@
+function Apply-CardVisibility {
+    param([Parameter(Mandatory)][hashtable]$UI)
+
+    $elements = @(
+        @{ Name = 'IpText';       Key = 'IP' }
+        @{ Name = 'GraphViewbox'; Key = 'Graph' }
+        @{ Name = 'StatsGrid';    Key = 'Stats' }
+    )
+
+    foreach ($el in $elements) {
+        $element = $UI[$el.Name]
+        if ($null -eq $element) { continue }
+        
+        $isVisible = $script:CardElementVisibility[$el.Key]
+        $element.Visibility = if ($isVisible) { 'Visible' } else { 'Collapsed' }
+    }
+}
 function New-MonitorCard {
     param([Parameter(Mandatory)][string]$HostName)
     [xml]$xaml = $script:MonitorCardXaml
@@ -1258,6 +1426,8 @@ function New-MonitorCard {
         DropText     = $card.FindName('DropText')
         MaxText      = $card.FindName('MaxText')
         GraphBars    = $card.FindName('GraphBars')
+        GraphViewbox = $card.FindName('GraphViewbox')
+        StatsGrid    = $card.FindName('StatsGrid')        
         ResetButton  = $card.FindName('ResetButton')
         PauseButton  = $card.FindName('PauseButton')
         RemoveButton = $card.FindName('RemoveButton')
@@ -1277,13 +1447,47 @@ function New-MonitorCard {
                 if ($ancestor -is [System.Windows.Controls.Border]) { $ancestor.Tag = $null }
             })
     }
+
+    # --- Global Card Context Menu ---
+    $menu = [System.Windows.Controls.ContextMenu]::new()
+    $menu.Style = $Window.FindResource('ThemedContextMenuStyle')
+    $menu.Add_Opened({
+        param($sender, $e)
+        foreach ($menuItem in $sender.Items) {
+            $key = [string]$menuItem.Tag
+            if ($script:CardElementVisibility.Contains($key)) {
+                $menuItem.IsChecked = [bool]$script:CardElementVisibility[$key]
+            }
+        }
+    })
+    foreach ($key in $script:CardElementVisibility.Keys) {
+        $item = [System.Windows.Controls.MenuItem]::new()
+        $item.Header = $key
+        $item.IsCheckable = $true
+        $item.IsChecked = $script:CardElementVisibility[$key]
+        $item.Style = $Window.FindResource('ThemedContextMenuItemStyle')
+        $item.Tag = $key
+        $item.Add_Click({ 
+            param($sender, $e) 
+            $script:CardElementVisibility[[string]$sender.Tag] = [bool]$sender.IsChecked
+            
+            foreach ($mon in $script:Monitors.Values) {
+                Apply-CardVisibility -UI $mon.Controls
+            }
+            Update-WindowMinSize
+        })
+        [void]$menu.Items.Add($item)
+    }
+    $card.ContextMenu = $menu
+    Apply-CardVisibility -UI $controls    
+
     return $controls
 }
 function Get-RttColor {
     param([double]$RttMs)
-    if ($RttMs -gt $script:Config.RttCriticalMs) { return $script:ThemeColors['Status.Critical'] }
-    if ($RttMs -gt $script:Config.RttWarningMs) { return $script:ThemeColors['Status.Warning'] }
-    return $script:ThemeColors['Status.Success']
+    if ($RttMs -gt $script:RttSettings.CriticalMs) { return $script:RttColors['Critical'] }
+    if ($RttMs -gt $script:RttSettings.WarningMs) { return $script:RttColors['Warning'] }
+    return $script:RttColors['Success']
 }
 function Set-MonitorGraphBarWidth {
     param([Parameter(Mandatory)]$Monitor)
@@ -1292,8 +1496,21 @@ function Set-MonitorGraphBarWidth {
     $slotWidth = $script:Config.GraphWidth / [double]$samples
     $Monitor.GraphBarWidth = [Math]::Max(1.0, $slotWidth - $Monitor.GraphBarGap)
 }
+$script:BrushCache = @{}
+function Get-CachedSolidBrush {
+    param([Parameter(Mandatory)][System.Windows.Media.Color]$Color)
+    $key = 'Solid:' + $Color.ToString()
+    if (-not $script:BrushCache.ContainsKey($key)) {
+        $brush = [System.Windows.Media.SolidColorBrush]::new($Color)
+        if ($brush.CanFreeze) { $brush.Freeze() }
+        $script:BrushCache[$key] = $brush
+    }
+    return $script:BrushCache[$key]
+}
 function New-RttBarBrush {
     param([System.Windows.Media.Color]$BaseColor)
+    $key = 'Gradient:' + $BaseColor.ToString()
+    if ($script:BrushCache.ContainsKey($key)) { return $script:BrushCache[$key] }
     $brush = [System.Windows.Media.LinearGradientBrush]::new()
     $brush.StartPoint = [System.Windows.Point]::new(0.5, 0)
     $brush.EndPoint = [System.Windows.Point]::new(0.5, 1)
@@ -1308,40 +1525,47 @@ function New-RttBarBrush {
         $brush.GradientStops.Add([System.Windows.Media.GradientStop]::new($color, $stop.Offset))
     }
     if ($brush.CanFreeze) { $brush.Freeze() }
+    $script:BrushCache[$key] = $brush
     return $brush
+}
+function Update-MonitorCardDisplay {
+    param([Parameter(Mandatory)]$Monitor, [Parameter(Mandatory)][hashtable]$Result)
+    $ui = $Monitor.Controls
+    $status = [string]$Result.Status
+    $ui.IpText.Text = if ($null -ne $Result.Address) { [string]$Result.Address } else { '' }
+    if ($status -eq 'Success') {
+        $rttColor = Get-RttColor -RttMs ([double]$Result.RttMs)
+        $ui.LatencyText.Text = '{0} ms' -f [long]$Result.RttMs
+        $ui.LatencyText.Foreground = Get-CachedSolidBrush -Color $rttColor
+        if (-not $Monitor.Paused) { $ui.StatusAccent.Background = Get-CachedSolidBrush -Color $rttColor }
+    }
+    else {
+        $failureBrush = Get-CachedSolidBrush -Color $script:RttColors['Failure']
+        $ui.LatencyText.Text = $status -replace '(?-i)(?!^)([A-Z])', ' $1'
+        $ui.LatencyText.Foreground = $failureBrush
+        if (-not $Monitor.Paused) { $ui.StatusAccent.Background = $failureBrush }
+    }
+    $ui.MinText.Text = if ($null -ne $Monitor.LifetimeMin) { "Min: $($Monitor.LifetimeMin)" } else { '' }
+    $ui.MaxText.Text = if ($null -ne $Monitor.LifetimeMax) { "Max: $($Monitor.LifetimeMax)" } else { '' }
+    $ui.DropText.Text = "Drop: $($Monitor.DroppedPackets)"
+    Update-MonitorGraph -Monitor $Monitor
 }
 function Update-MonitorCard {
     param([Parameter(Mandatory)][hashtable]$Result)
     if (-not $script:Monitors.ContainsKey([string]$Result.MonitorId)) { return }
     $monitor = $script:Monitors[[string]$Result.MonitorId]
-    $ui = $monitor.Controls
     $status = [string]$Result.Status
     if ($Result.Timestamp -isnot [DateTime]) { return }
     $sampleTimestamp = $Result.Timestamp.ToUniversalTime()
     if ($sampleTimestamp -lt $monitor.StatsResetUtc) { return }
+    $monitor.LastResult = $Result
     if ($status -eq 'Success') {
         $value = [double]$Result.RttMs
-        $rttColor = Get-RttColor -RttMs $value
-        $ui.IpText.Text = if ($null -ne $Result.Address) { [string]$Result.Address } else { '' }
-        $ui.LatencyText.Text = '{0} ms' -f [long]$value
-        $ui.LatencyText.Foreground = [System.Windows.Media.SolidColorBrush]::new($rttColor)
-        if (-not $monitor.Paused) {
-            $ui.StatusAccent.Background = [System.Windows.Media.SolidColorBrush]::new($rttColor)
-        }
         $monitor.LastRtt = [long]$value
         if ($null -eq $monitor.LifetimeMin -or $value -lt [double]$monitor.LifetimeMin) { $monitor.LifetimeMin = [long]$value }
         if ($null -eq $monitor.LifetimeMax -or $value -gt [double]$monitor.LifetimeMax) { $monitor.LifetimeMax = [long]$value }
     }
-    else {
-        $ui.IpText.Text = if ($null -ne $Result.Address) { [string]$Result.Address } else { '' }
-        $ui.LatencyText.Text = ($status -replace '(?-i)(?!^)([A-Z])', ' $1')
-        $failureBrush = [System.Windows.Media.SolidColorBrush]::new($script:ThemeColors['Status.Failure'])
-        $ui.LatencyText.Foreground = $failureBrush
-        if (-not $monitor.Paused) {
-            $ui.StatusAccent.Background = $failureBrush
-        }
-        if ($status -eq 'TimedOut') { $monitor.DroppedPackets++ }
-    }
+    elseif ($status -eq 'TimedOut') { $monitor.DroppedPackets++ }
     $sample = [pscustomobject]@{
         Timestamp = $sampleTimestamp
         Status    = $status
@@ -1349,49 +1573,69 @@ function Update-MonitorCard {
         RttMs     = if ($status -eq 'Success') { [long]$Result.RttMs } else { $null }
         TimeoutMs = [int]$Result.TimeoutMs
     }
-    $ui.MinText.Text = if ($null -ne $monitor.LifetimeMin) { "Min: $($monitor.LifetimeMin)" } else { '' }
-    $ui.MaxText.Text = if ($null -ne $monitor.LifetimeMax) { "Max: $($monitor.LifetimeMax)" } else { '' }
-    $ui.DropText.Text = "Drop: $($monitor.DroppedPackets)"
     if ($script:Settings.HistoryDepth -gt 0) {
         $monitor.History.Enqueue($sample)
         while ($monitor.History.Count -gt $script:Settings.HistoryDepth) { [void]$monitor.History.Dequeue() }
     }
-    Update-MonitorGraph -Monitor $monitor
+    if ($script:ViewMode -eq 'Card') { Update-MonitorCardDisplay -Monitor $monitor -Result $Result }
 }
 function Update-MonitorGraph {
     param([Parameter(Mandatory)]$Monitor)
     $ui = $Monitor.Controls
     $historyArray = @($Monitor.History)
     $count = $historyArray.Count
-    $ui.GraphBars.Children.Clear()
-    if ($count -eq 0) { $ui.AvgText.Text = ''; return }
+    if ($count -eq 0) {
+        $ui.AvgText.Text = ''
+        foreach ($element in $Monitor.GraphElements) {
+            $element.Hitbox.Visibility = 'Collapsed'
+            $element.Bar.Visibility = 'Collapsed'
+        }
+        return
+    }
     $validValues = @($historyArray | Where-Object { $_.Status -eq 'Success' -and $null -ne $_.RttMs } | ForEach-Object { [double]$_.RttMs })
     $ui.AvgText.Text = if ($validValues.Count -gt 0) {
         "Avg: $([math]::Round(($validValues | Measure-Object -Average).Average))"
-    } else { 'Avg: -' }
+    }
+    else { 'Avg: -' }
     if ($Monitor.GraphBarWidth -le 0) { Set-MonitorGraphBarWidth -Monitor $Monitor }
     $barWidth = [double]$Monitor.GraphBarWidth
     $barGap = [double]$Monitor.GraphBarGap
     $slotWidth = $barWidth + $barGap
     $height = $script:Config.GraphHeight
     $graphWidth = $script:Config.GraphWidth
-    for ($i = 0; $i -lt $count; $i++) {
+    while ($Monitor.GraphElements.Count -lt $count) {
+        $hitbox = [System.Windows.Shapes.Rectangle]::new()
+        $hitbox.Fill = [System.Windows.Media.Brushes]::Transparent
+        $hitbox.Cursor = [System.Windows.Input.Cursors]::Hand
+        $bar = [System.Windows.Shapes.Rectangle]::new()
+        $bar.RadiusX = 1
+        $bar.RadiusY = 1
+        $bar.IsHitTestVisible = $false
+        [void]$ui.GraphBars.Children.Add($hitbox)
+        [void]$ui.GraphBars.Children.Add($bar)
+        [void]$Monitor.GraphElements.Add([pscustomobject]@{ Hitbox = $hitbox; Bar = $bar })
+    }
+    for ($i = 0; $i -lt $Monitor.GraphElements.Count; $i++) {
+        $element = $Monitor.GraphElements[$i]
+        if ($i -ge $count) {
+            $element.Hitbox.Visibility = 'Collapsed'
+            $element.Bar.Visibility = 'Collapsed'
+            continue
+        }
         $sample = $historyArray[$i]
         $ageIndex = $count - 1 - $i
         $left = ($graphWidth - (($ageIndex + 1) * $slotWidth)) + ($barGap / 2.0)
         $timestampText = if ($sample.Timestamp -is [DateTime]) {
             $sample.Timestamp.ToLocalTime().ToString('yyyy-MM-dd HH:mm:ss.fff')
-        } else { 'Unknown time' }
-        $hitbox = [System.Windows.Shapes.Rectangle]::new()
+        }
+        else { 'Unknown time' }
+        $hitbox = $element.Hitbox
+        $bar = $element.Bar
+        $hitbox.Visibility = 'Visible'
+        $bar.Visibility = 'Visible'
         $hitbox.Width = $barWidth
         $hitbox.Height = $height
-        $hitbox.Fill = [System.Windows.Media.Brushes]::Transparent
-        $hitbox.Cursor = [System.Windows.Input.Cursors]::Hand
-        $bar = [System.Windows.Shapes.Rectangle]::new()
         $bar.Width = $barWidth
-        $bar.RadiusX = 1
-        $bar.RadiusY = 1
-        $bar.IsHitTestVisible = $false
         if ($sample.Status -eq 'Success') {
             $rtt = [double]$sample.RttMs
             $rttColor = Get-RttColor -RttMs $rtt
@@ -1402,15 +1646,13 @@ function Update-MonitorGraph {
         }
         else {
             $bar.Height = $script:Config.GraphErrorBarHeight
-            $bar.Fill = [System.Windows.Media.SolidColorBrush]::new($script:ThemeColors['Status.Failure'])
+            $bar.Fill = Get-CachedSolidBrush -Color $script:RttColors['Failure']
             $hitbox.ToolTip = "$($sample.Status)`nTimeout: $($sample.TimeoutMs) ms`n$timestampText"
         }
         [System.Windows.Controls.Canvas]::SetLeft($hitbox, $left)
         [System.Windows.Controls.Canvas]::SetTop($hitbox, 0)
-        [void]$ui.GraphBars.Children.Add($hitbox)
         [System.Windows.Controls.Canvas]::SetLeft($bar, $left)
         [System.Windows.Controls.Canvas]::SetTop($bar, $height - $bar.Height)
-        [void]$ui.GraphBars.Children.Add($bar)
     }
 }
 #endregion
@@ -1423,12 +1665,45 @@ function New-HistoryDisplayItem {
         $tooltip = "RTT: $([long]$Sample.RttMs) ms`n$timestamp"
     }
     else {
-        $color = $script:ThemeColors['Status.Failure']
+        $color = $script:RttColors['Failure']
         $tooltip = "$($Sample.Status)`nTimeout: $($Sample.TimeoutMs) ms`n$timestamp"
     }
     [pscustomobject]@{
-        Brush   = [System.Windows.Media.SolidColorBrush]::new($color)
+        Sample  = $Sample
+        Brush   = Get-CachedSolidBrush -Color $color
         ToolTip = $tooltip
+    }
+}
+function Sync-MonitorHistoryDisplay {
+    param([Parameter(Mandatory)]$Monitor)
+
+    $history = @($Monitor.History)
+    $display = $Monitor.HistoryDisplay
+
+    if ($history.Count -eq 0) {
+        if ($display.Count -gt 0) { $display.Clear() }
+        return
+    }
+
+    $firstIndex = -1
+    $firstSample = $history[0]
+    for ($i = 0; $i -lt $display.Count; $i++) {
+        if ([object]::ReferenceEquals($display[$i].Sample, $firstSample)) {
+            $firstIndex = $i
+            break
+        }
+    }
+
+    if ($firstIndex -ge 0) {
+        for ($i = 0; $i -lt $firstIndex; $i++) { $display.RemoveAt(0) }
+    }
+    elseif ($display.Count -gt 0) {
+        $display.Clear()
+    }
+
+    for ($i = $display.Count; $i -lt $history.Count; $i++) {
+        $sample = $history[$i]
+        [void]$display.Add((New-HistoryDisplayItem -Sample $sample))
     }
 }
 function Update-MonitorRow {
@@ -1437,33 +1712,40 @@ function Update-MonitorRow {
     $Monitor.DisplayIp = if ($null -ne $Result.Address) { [string]$Result.Address } else { '' }
     $Monitor.DisplayLatency = if ($status -eq 'Success') { '{0} ms' -f [long]$Result.RttMs } else { $status -replace '(?-i)(?!^)([A-Z])', ' $1' }
     $Monitor.LatencyBrush = if ($status -eq 'Success') {
-        [System.Windows.Media.SolidColorBrush]::new((Get-RttColor -RttMs ([double]$Result.RttMs)))
-    } else { Get-ThemeBrush -Key 'Status.Failure' }
+        (Get-CachedSolidBrush -Color (Get-RttColor -RttMs ([double]$Result.RttMs)))
+    }
+    else { Get-CachedSolidBrush -Color $script:RttColors['Failure'] }
     $Monitor.DisplayMin = if ($null -ne $Monitor.LifetimeMin) { [string]$Monitor.LifetimeMin } else { '' }
     $Monitor.DisplayMax = if ($null -ne $Monitor.LifetimeMax) { [string]$Monitor.LifetimeMax } else { '' }
     $Monitor.DisplayDrop = [string]$Monitor.DroppedPackets
-    $valid = @($Monitor.History | Where-Object { $_.Status -eq 'Success' -and $null -ne $_.RttMs } | ForEach-Object { [double]$_.RttMs })
-    $Monitor.DisplayAvg = if ($valid.Count) { [string][math]::Round(($valid | Measure-Object -Average).Average) } else { '' }
-    $Monitor.StatusBrush = if ($Monitor.Paused) { Get-ThemeBrush -Key 'Status.Neutral' } elseif ($status -eq 'Success') { [System.Windows.Media.SolidColorBrush]::new((Get-RttColor -RttMs ([double]$Result.RttMs))) } else { Get-ThemeBrush -Key 'Status.Failure' }
-    $Monitor.HistoryDisplay.Clear()
-    foreach ($sample in $Monitor.History) { [void]$Monitor.HistoryDisplay.Add((New-HistoryDisplayItem -Sample $sample)) }
+    $sum = 0.0
+    $count = 0
+    foreach ($sample in $Monitor.History) {
+        if ($sample.Status -eq 'Success' -and $null -ne $sample.RttMs) {
+            $sum += [double]$sample.RttMs
+            $count++
+        }
+    }
+    $Monitor.DisplayAvg = if ($count) { [string][math]::Round($sum / $count) } else { '' }
+    $Monitor.StatusBrush = if ($Monitor.Paused) { Get-CachedSolidBrush -Color $script:RttColors['Neutral'] } elseif ($status -eq 'Success') { Get-CachedSolidBrush -Color (Get-RttColor -RttMs ([double]$Result.RttMs)) } else { Get-CachedSolidBrush -Color $script:RttColors['Failure'] }
+    Sync-MonitorHistoryDisplay -Monitor $Monitor
 }
 #endregion
 #region 13.Views.OptionsDialog
 
 $script:OptionsFieldSpecs = @(
-    [pscustomobject]@{ Name = 'Interval';     Control = 'IntervalInput'; Min = 0; Max = 3600;  Error = 'Interval must be between 0 and 3600 seconds.' }
-    [pscustomobject]@{ Name = 'Timeout';      Control = 'TimeoutInput';  Min = 1; Max = [int]::MaxValue; Error = 'Timeout must be a positive whole number.' }
-    [pscustomobject]@{ Name = 'BufferSize';   Control = 'BufferInput';   Min = 0; Max = 65500;  Error = 'Buffer size must be between 0 and 65500 bytes.' }
-    [pscustomobject]@{ Name = 'Ttl';          Control = 'TtlInput';      Min = 1; Max = 255;    Error = 'TTL must be between 1 and 255.' }
-    [pscustomobject]@{ Name = 'HistoryDepth'; Control = 'HistoryInput';  Min = 0; Max = 20;     Error = 'History samples must be between 0 and 20.' }
+    [pscustomobject]@{ Name = 'Interval'; Control = 'IntervalInput'; Min = 0; Max = 3600; Error = 'Interval must be between 0 and 3600 seconds.' }
+    [pscustomobject]@{ Name = 'Timeout'; Control = 'TimeoutInput'; Min = 1; Max = [int]::MaxValue; Error = 'Timeout must be a positive whole number.' }
+    [pscustomobject]@{ Name = 'BufferSize'; Control = 'BufferInput'; Min = 0; Max = 65500; Error = 'Buffer size must be between 0 and 65500 bytes.' }
+    [pscustomobject]@{ Name = 'Ttl'; Control = 'TtlInput'; Min = 1; Max = 255; Error = 'TTL must be between 1 and 255.' }
+    [pscustomobject]@{ Name = 'HistoryDepth'; Control = 'HistoryInput'; Min = 0; Max = 20; Error = 'History samples must be between 0 and 20.' }
 )
 $script:OptionsDialogXaml = [xml]@'
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="Options" Width="390" SizeToContent="Height" ResizeMode="NoResize" WindowStyle="None" WindowStartupLocation="CenterOwner" ShowInTaskbar="False" AllowsTransparency="True" Background="Transparent" FontFamily="Segoe UI" FontSize="13" SnapsToDevicePixels="True">
     <Border Margin="0" Background="{DynamicResource Theme.Window.Background}" BorderBrush="{DynamicResource Theme.Border}" BorderThickness="1" CornerRadius="10" ClipToBounds="True">
         <Border.Effect>
-            <DropShadowEffect Color="#000000" BlurRadius="12" ShadowDepth="4" Opacity="0.12"/>
+            <DropShadowEffect Color="{DynamicResource Theme.Shadow.Color}" BlurRadius="12" ShadowDepth="4" Opacity="0.12"/>
 
         </Border.Effect>
         <Grid>
@@ -1729,7 +2011,7 @@ function Register-CardDragSource {
 #endregion
 #region 25.ViewModel.TableView
 
-$script:TableColumnVisibility = [ordered]@{ Status=$true; Host=$true; IP=$true; Latency=$true; Avg=$true; Min=$true; Max=$true; Drop=$true; History=$true }
+$script:TableColumnVisibility = [ordered]@{ Status = $true; Host = $true; IP = $true; Latency = $true; Avg = $true; Min = $true; Max = $true; Drop = $true; History = $true }
 function Get-VisualAncestor {
     param($Start, [Parameter(Mandatory)][type]$Type)
     $current = $Start
@@ -1742,20 +2024,20 @@ function Get-VisualAncestor {
 function Sync-CardPanelOrder {
     if (-not $MonitorPanel) { return }
     $ordered = @($script:Monitors.Values | Sort-Object Sequence)
-    for ($i=0; $i -lt $ordered.Count; $i++) {
-        $card=$ordered[$i].Controls.Card; $current=$MonitorPanel.Children.IndexOf($card)
-        if ($current -ge 0 -and $current -ne $i) { [void]$MonitorPanel.Children.Remove($card); [void]$MonitorPanel.Children.Insert($i,$card) }
+    for ($i = 0; $i -lt $ordered.Count; $i++) {
+        $card = $ordered[$i].Controls.Card; $current = $MonitorPanel.Children.IndexOf($card)
+        if ($current -ge 0 -and $current -ne $i) { [void]$MonitorPanel.Children.Remove($card); [void]$MonitorPanel.Children.Insert($i, $card) }
     }
 }
 function Sync-TablePanelOrder {
     if (-not $TableGrid) { return }
-    $ordered=@($script:Monitors.Values | Sort-Object Sequence)
+    $ordered = @($script:Monitors.Values | Sort-Object Sequence)
     $TableGrid.Items.Clear()
     foreach ($monitor in $ordered) { [void]$TableGrid.Items.Add($monitor) }
 }
 function Update-TableRowSequences {
-    $sequence=1
-    foreach ($monitor in @($TableGrid.Items)) { $monitor.Sequence=$sequence++ }
+    $sequence = 1
+    foreach ($monitor in @($TableGrid.Items)) { $monitor.Sequence = $sequence++ }
     Sync-CardPanelOrder
 }
 function Invoke-RowActionMenuItemClick {
@@ -1764,15 +2046,14 @@ function Invoke-RowActionMenuItemClick {
     if (-not $script:Monitors.ContainsKey($parts[0])) { return }
     $target = $script:Monitors[$parts[0]]
     switch ($parts[1]) {
-        'Reset'  { Reset-MonitorStatistics -Monitor $target }
-        'Pause'  { Set-MonitorsPaused -Monitor $target }
+        'Reset' { Reset-MonitorStatistics -Monitor $target }
+        'Pause' { Set-MonitorsPaused -Monitor $target }
         'Remove' { Stop-Monitor -Monitor $target -RemoveCard }
     }
-    $TableGrid.Items.Refresh()
     $EventArgs.Handled = $true
 }
 function New-RowActionMenuItem {
-    param([string]$Header,[string]$IconData,[string]$Tag)
+    param([string]$Header, [string]$IconData, [string]$Tag)
     $item = [System.Windows.Controls.MenuItem]::new()
     $item.Header = $Header
     $item.Tag = $Tag
@@ -1782,11 +2063,11 @@ function New-RowActionMenuItem {
     $icon.Fill = Get-ThemeBrush -Key 'MenuItem.IconFill'
     $icon.Width = 14; $icon.Height = 14; $icon.Stretch = 'Uniform'
     $item.Icon = $icon
-    $item.Add_Click({ param($sender,$e) Invoke-RowActionMenuItemClick -Sender $sender -EventArgs $e })
+    $item.Add_Click({ param($sender, $e) Invoke-RowActionMenuItemClick -Sender $sender -EventArgs $e })
     return $item
 }
 function Show-RowActionMenu {
-    param([Parameter(Mandatory)][System.Windows.FrameworkElement]$Button,[Parameter(Mandatory)]$Monitor)
+    param([Parameter(Mandatory)][System.Windows.FrameworkElement]$Button, [Parameter(Mandatory)]$Monitor)
     $menu = [System.Windows.Controls.ContextMenu]::new()
     
     $menu.Style = $Window.FindResource('ThemedContextMenuStyle')
@@ -1828,100 +2109,100 @@ function Show-ColumnVisibilityMenu {
         $item.IsCheckable = $true
         $item.IsChecked = [bool]$script:TableColumnVisibility[$name]
         $item.StaysOpenOnClick = $true
-        $item.Add_Click({ param($sender,$e) Invoke-ColumnVisibilityMenuItemClick -Sender $sender })
+        $item.Add_Click({ param($sender, $e) Invoke-ColumnVisibilityMenuItemClick -Sender $sender })
         [void]$menu.Items.Add($item)
     }
     $menu.IsOpen = $true
 }
 
 function Initialize-DataGridActions {
-    $TableGrid.Add_PreviewMouseWheel({param($sender,$e)
-        if(-not [System.Windows.Input.Keyboard]::IsKeyDown([System.Windows.Input.Key]::LeftShift) -and
-           -not [System.Windows.Input.Keyboard]::IsKeyDown([System.Windows.Input.Key]::RightShift)){return}
-        $scrollViewer=Get-VisualAncestor -Start $e.OriginalSource -Type ([System.Windows.Controls.ScrollViewer])
-        if(-not $scrollViewer){return}
-        $scrollViewer.ScrollToHorizontalOffset($scrollViewer.HorizontalOffset - $e.Delta)
-        $e.Handled=$true
-    })
-    $TableGrid.Add_PreviewMouseRightButtonDown({param($sender,$e)
-        $header=Get-VisualAncestor -Start $e.OriginalSource -Type ([System.Windows.Controls.Primitives.DataGridColumnHeader])
-        if($header){ $e.Handled=$true; return }
-        $row=Get-VisualAncestor -Start $e.OriginalSource -Type ([System.Windows.Controls.DataGridRow])
-        if($row){ $row.IsSelected=$true; $e.Handled=$true }
-    })
-    $TableGrid.Add_PreviewMouseRightButtonUp({param($sender,$e)
-        $header=Get-VisualAncestor -Start $e.OriginalSource -Type ([System.Windows.Controls.Primitives.DataGridColumnHeader])
-        if($header){
-            Show-ColumnVisibilityMenu -PlacementTarget $header
-            $e.Handled=$true
-            return
-        }
-        $row=Get-VisualAncestor -Start $e.OriginalSource -Type ([System.Windows.Controls.DataGridRow])
-        if($row -and $row.Item){
-            Show-RowActionMenu -Button $row -Monitor $row.Item
-            $e.Handled=$true
-        }
-    })
+    $TableGrid.Add_PreviewMouseWheel({ param($sender, $e)
+            if (-not [System.Windows.Input.Keyboard]::IsKeyDown([System.Windows.Input.Key]::LeftShift) -and
+                -not [System.Windows.Input.Keyboard]::IsKeyDown([System.Windows.Input.Key]::RightShift)) { return }
+            $scrollViewer = Get-VisualAncestor -Start $e.OriginalSource -Type ([System.Windows.Controls.ScrollViewer])
+            if (-not $scrollViewer) { return }
+            $scrollViewer.ScrollToHorizontalOffset($scrollViewer.HorizontalOffset - $e.Delta)
+            $e.Handled = $true
+        })
+    $TableGrid.Add_PreviewMouseRightButtonDown({ param($sender, $e)
+            $header = Get-VisualAncestor -Start $e.OriginalSource -Type ([System.Windows.Controls.Primitives.DataGridColumnHeader])
+            if ($header) { $e.Handled = $true; return }
+            $row = Get-VisualAncestor -Start $e.OriginalSource -Type ([System.Windows.Controls.DataGridRow])
+            if ($row) { $row.IsSelected = $true; $e.Handled = $true }
+        })
+    $TableGrid.Add_PreviewMouseRightButtonUp({ param($sender, $e)
+            $header = Get-VisualAncestor -Start $e.OriginalSource -Type ([System.Windows.Controls.Primitives.DataGridColumnHeader])
+            if ($header) {
+                Show-ColumnVisibilityMenu -PlacementTarget $header
+                $e.Handled = $true
+                return
+            }
+            $row = Get-VisualAncestor -Start $e.OriginalSource -Type ([System.Windows.Controls.DataGridRow])
+            if ($row -and $row.Item) {
+                Show-RowActionMenu -Button $row -Monitor $row.Item
+                $e.Handled = $true
+            }
+        })
 }
 function Hide-DataGridDropLine {
-    if($TableDropLine){$TableDropLine.Visibility='Collapsed'}
+    if ($TableDropLine) { $TableDropLine.Visibility = 'Collapsed' }
 }
 function Show-DataGridDropLine {
-    param([System.Windows.Controls.DataGridRow]$TargetRow,[bool]$After)
-    if(-not $TargetRow){Hide-DataGridDropLine;return}
-    $point=$TargetRow.TranslatePoint([System.Windows.Point]::new(0,0),$TableDragOverlay)
-    $TableDropLine.Width=[Math]::Max(40,$TableGrid.ActualWidth)
-    [System.Windows.Controls.Canvas]::SetLeft($TableDropLine,0)
-    $dropY=$point.Y
-    if($After){$dropY += $TargetRow.ActualHeight}
-    [System.Windows.Controls.Canvas]::SetTop($TableDropLine,$dropY-1.5)
-    $TableDropLine.Visibility='Visible'
+    param([System.Windows.Controls.DataGridRow]$TargetRow, [bool]$After)
+    if (-not $TargetRow) { Hide-DataGridDropLine; return }
+    $point = $TargetRow.TranslatePoint([System.Windows.Point]::new(0, 0), $TableDragOverlay)
+    $TableDropLine.Width = [Math]::Max(40, $TableGrid.ActualWidth)
+    [System.Windows.Controls.Canvas]::SetLeft($TableDropLine, 0)
+    $dropY = $point.Y
+    if ($After) { $dropY += $TargetRow.ActualHeight }
+    [System.Windows.Controls.Canvas]::SetTop($TableDropLine, $dropY - 1.5)
+    $TableDropLine.Visibility = 'Visible'
 }
 function Initialize-DataGridDragDrop {
-    $TableGrid.Add_PreviewMouseLeftButtonDown({param($sender,$e)
-        if(Get-VisualAncestor -Start $e.OriginalSource -Type ([System.Windows.Controls.Button])){
-            $script:DraggingRow=$null;$script:DraggedMonitor=$null;return
-        }
-        $row=Get-VisualAncestor -Start $e.OriginalSource -Type ([System.Windows.Controls.DataGridRow])
-        $script:DraggingRow=$row
-        $script:DraggedMonitor=if($row){$row.Item}else{$null}
-        $script:RowDragStart=$e.GetPosition($TableGrid)
-    })
-    $TableGrid.Add_PreviewMouseLeftButtonUp({param($sender,$e)
-        $script:DraggingRow=$null;$script:DraggedMonitor=$null
-    })
-    $TableGrid.Add_PreviewMouseMove({param($sender,$e)
-        if(-not $script:DraggingRow -or $e.LeftButton -ne 'Pressed'){return}
-        $p=$e.GetPosition($TableGrid)
-        if([Math]::Abs($p.X-$script:RowDragStart.X)-lt $script:Config.DragThresholdPx -and [Math]::Abs($p.Y-$script:RowDragStart.Y)-lt $script:Config.DragThresholdPx){return}
-        $draggedRow=$script:DraggingRow
-        $draggedMonitor=$script:DraggedMonitor
-        $script:DraggingRow=$null
-        $draggedRow.IsSelected=$true; $draggedRow.Opacity=.65
-        $data = New-Object System.Windows.DataObject
-        [void]$data.SetData('PingMonitorMonitor', $draggedMonitor)
-        try{[void][System.Windows.DragDrop]::DoDragDrop($draggedRow,$data,[System.Windows.DragDropEffects]::Move)}
-        finally{$script:DraggedMonitor=$null;$draggedRow.Opacity=1;Hide-DataGridDropLine}
-    })
-    $TableGrid.Add_DragOver({param($sender,$e)
-        $target=Get-VisualAncestor -Start $e.OriginalSource -Type ([System.Windows.Controls.DataGridRow])
-        $after=$target -and ($e.GetPosition($target).Y -gt ($target.ActualHeight/2))
-        Show-DataGridDropLine -TargetRow $target -After $after
-        $e.Effects='Move';$e.Handled=$true
-    })
-    $TableGrid.Add_DragLeave({Hide-DataGridDropLine})
-    $TableGrid.Add_Drop({param($sender,$e)
-        $item=$null
-        try { $item=$e.Data.GetData('PingMonitorMonitor') } catch { $item=$null }
-        if(-not $item){ $item=$script:DraggedMonitor }
-        if(-not $item){Hide-DataGridDropLine;return}
-        $target=Get-VisualAncestor -Start $e.OriginalSource -Type ([System.Windows.Controls.DataGridRow])
-        $old=$TableGrid.Items.IndexOf($item); if($old -lt 0){return}
-        $new=if($target){$target.GetIndex()}else{$TableGrid.Items.Count-1}
-        if($target -and $e.GetPosition($target).Y -gt ($target.ActualHeight/2)){$new++}
-        [void]$TableGrid.Items.Remove($item);if($new -gt $old){$new--};$new=[Math]::Max(0,[Math]::Min($new,$TableGrid.Items.Count));[void]$TableGrid.Items.Insert($new,$item)
-        Update-TableRowSequences;Hide-DataGridDropLine;$e.Handled=$true
-    })
+    $TableGrid.Add_PreviewMouseLeftButtonDown({ param($sender, $e)
+            if (Get-VisualAncestor -Start $e.OriginalSource -Type ([System.Windows.Controls.Button])) {
+                $script:DraggingRow = $null; $script:DraggedMonitor = $null; return
+            }
+            $row = Get-VisualAncestor -Start $e.OriginalSource -Type ([System.Windows.Controls.DataGridRow])
+            $script:DraggingRow = $row
+            $script:DraggedMonitor = if ($row) { $row.Item }else { $null }
+            $script:RowDragStart = $e.GetPosition($TableGrid)
+        })
+    $TableGrid.Add_PreviewMouseLeftButtonUp({ param($sender, $e)
+            $script:DraggingRow = $null; $script:DraggedMonitor = $null
+        })
+    $TableGrid.Add_PreviewMouseMove({ param($sender, $e)
+            if (-not $script:DraggingRow -or $e.LeftButton -ne 'Pressed') { return }
+            $p = $e.GetPosition($TableGrid)
+            if ([Math]::Abs($p.X - $script:RowDragStart.X) -lt $script:Config.DragThresholdPx -and [Math]::Abs($p.Y - $script:RowDragStart.Y) -lt $script:Config.DragThresholdPx) { return }
+            $draggedRow = $script:DraggingRow
+            $draggedMonitor = $script:DraggedMonitor
+            $script:DraggingRow = $null
+            $draggedRow.IsSelected = $true; $draggedRow.Opacity = .65
+            $data = New-Object System.Windows.DataObject
+            [void]$data.SetData('PingMonitorMonitor', $draggedMonitor)
+            try { [void][System.Windows.DragDrop]::DoDragDrop($draggedRow, $data, [System.Windows.DragDropEffects]::Move) }
+            finally { $script:DraggedMonitor = $null; $draggedRow.Opacity = 1; Hide-DataGridDropLine }
+        })
+    $TableGrid.Add_DragOver({ param($sender, $e)
+            $target = Get-VisualAncestor -Start $e.OriginalSource -Type ([System.Windows.Controls.DataGridRow])
+            $after = $target -and ($e.GetPosition($target).Y -gt ($target.ActualHeight / 2))
+            Show-DataGridDropLine -TargetRow $target -After $after
+            $e.Effects = 'Move'; $e.Handled = $true
+        })
+    $TableGrid.Add_DragLeave({ Hide-DataGridDropLine })
+    $TableGrid.Add_Drop({ param($sender, $e)
+            $item = $null
+            try { $item = $e.Data.GetData('PingMonitorMonitor') } catch { $item = $null }
+            if (-not $item) { $item = $script:DraggedMonitor }
+            if (-not $item) { Hide-DataGridDropLine; return }
+            $target = Get-VisualAncestor -Start $e.OriginalSource -Type ([System.Windows.Controls.DataGridRow])
+            $old = $TableGrid.Items.IndexOf($item); if ($old -lt 0) { return }
+            $new = if ($target) { $target.GetIndex() }else { $TableGrid.Items.Count - 1 }
+            if ($target -and $e.GetPosition($target).Y -gt ($target.ActualHeight / 2)) { $new++ }
+            [void]$TableGrid.Items.Remove($item); if ($new -gt $old) { $new-- }; $new = [Math]::Max(0, [Math]::Min($new, $TableGrid.Items.Count)); [void]$TableGrid.Items.Insert($new, $item)
+            Update-TableRowSequences; Hide-DataGridDropLine; $e.Handled = $true
+        })
 }
 #endregion
 #region 21.ViewModel.Monitor
@@ -1944,7 +2225,7 @@ function Test-ValidHostName {
 }
 function New-MonitorModel {
     param([Parameter(Mandatory)][string]$HostName, [Parameter(Mandatory)][bool]$IsLiteralIp, [Parameter(Mandatory)][hashtable]$Controls)
-    [pscustomobject]@{
+    [PingMonitor.MonitorModel]::new(@{
         Id             = [guid]::NewGuid().Guid
         Sequence       = ++$script:Sequence
         HostName       = $HostName
@@ -1952,14 +2233,16 @@ function New-MonitorModel {
         Controls       = $Controls
         History        = [System.Collections.Generic.Queue[psobject]]::new()
         HistoryDisplay = [System.Collections.ObjectModel.ObservableCollection[object]]::new()
+        GraphElements  = [System.Collections.ArrayList]::new()
+        LastResult     = $null
         DisplayIp      = ''
         DisplayLatency = ''
         DisplayAvg     = ''
         DisplayMin     = ''
         DisplayMax     = ''
         DisplayDrop    = '0'
-        StatusBrush    = Get-ThemeBrush -Key 'Status.Neutral'
-        LatencyBrush   = Get-ThemeBrush -Key 'Text.Secondary'
+        StatusBrush    = Get-CachedSolidBrush -Color $script:RttColors['Neutral']
+        LatencyBrush   = Get-CachedSolidBrush -Color $script:RttColors['Neutral']
         LifetimeMin    = $null
         LifetimeMax    = $null
         DroppedPackets = 0
@@ -1974,7 +2257,7 @@ function New-MonitorModel {
         GraphBarWidth  = 1.0
         PowerShell     = $null
         AsyncResult    = $null
-    }
+    })
 }
 function Add-Monitor {
     param([string]$HostName)
@@ -2006,8 +2289,8 @@ function Add-Monitor {
     if ($monitor.Paused) {
         $controls.PauseButton.Content = [char]0x25B6
         $controls.PauseButton.ToolTip = 'Resume monitoring'
-        $controls.StatusAccent.Background = [System.Windows.Media.SolidColorBrush]::new($script:ThemeColors['Status.Neutral'])
-        $monitor.StatusBrush = Get-ThemeBrush -Key 'Status.Neutral' 
+        $controls.StatusAccent.Background = [System.Windows.Media.SolidColorBrush]::new($script:RttColors['Neutral'])
+        $monitor.StatusBrush = Get-CachedSolidBrush -Color $script:RttColors['Neutral'] 
     }
     $HostInput.Clear()
     $HostInput.Focus()
@@ -2046,32 +2329,37 @@ function Reset-MonitorStatistics {
     $ui.LatencyText.Text = ''
     $ui.LatencyText.Foreground = [System.Windows.Media.SolidColorBrush]::new($script:ThemeColors['Text.Secondary'])
     $ui.IpText.Text = ''
-    $ui.StatusAccent.Background = [System.Windows.Media.SolidColorBrush]::new($script:ThemeColors['Status.Neutral'])
+    $ui.StatusAccent.Background = [System.Windows.Media.SolidColorBrush]::new($script:RttColors['Neutral'])
     $ui.AvgText.Text = ''
     $ui.MinText.Text = ''
     $ui.DropText.Text = 'Drop: 0'
     $ui.MaxText.Text = ''
-    $ui.GraphBars.Children.Clear()
-    $Monitor.DisplayIp=''; $Monitor.DisplayLatency=''; $Monitor.DisplayAvg=''; $Monitor.DisplayMin=''; $Monitor.DisplayMax=''; $Monitor.DisplayDrop='0'
-    $Monitor.StatusBrush=Get-ThemeBrush -Key 'Status.Neutral'
-    $Monitor.LatencyBrush=Get-ThemeBrush -Key 'Text.Secondary'
+    foreach ($element in $Monitor.GraphElements) {
+        $element.Hitbox.Visibility = 'Collapsed'
+        $element.Bar.Visibility = 'Collapsed'
+    }
+    $Monitor.DisplayIp = ''; $Monitor.DisplayLatency = ''; $Monitor.DisplayAvg = ''; $Monitor.DisplayMin = ''; $Monitor.DisplayMax = ''; $Monitor.DisplayDrop = '0'
+    $Monitor.StatusBrush = Get-CachedSolidBrush -Color $script:RttColors['Neutral']
+    $Monitor.LatencyBrush = Get-CachedSolidBrush -Color $script:RttColors['Neutral']
     $Monitor.HistoryDisplay.Clear()
+    $Monitor.LastResult = $null
     if (-not $Monitor.InFlight -and -not $Monitor.IsStopping -and -not $Monitor.Paused) {
         $Monitor.NextDueUtc = [DateTime]::UtcNow
     }
 }
 function Set-MonitorsPaused {
     param(
-        [Parameter(ParameterSetName='Single', Mandatory)][object]$Monitor,
-        [Parameter(ParameterSetName='All', Mandatory)][bool]$Paused
+        [Parameter(ParameterSetName = 'Single', Mandatory)][object]$Monitor,
+        [Parameter(ParameterSetName = 'All', Mandatory)][bool]$Paused
     )
     $monitors = if ($PSCmdlet.ParameterSetName -eq 'All') {
         $script:GlobalPaused = $Paused
         @($script:Monitors.Values)
-    } else {
+    }
+    else {
         @($Monitor)
     }
-    $neutralBrush = [System.Windows.Media.SolidColorBrush]::new($script:ThemeColors['Status.Neutral'])
+    $neutralBrush = [System.Windows.Media.SolidColorBrush]::new($script:RttColors['Neutral'])
     foreach ($item in $monitors) {
         if ($item.IsStopping) { continue }
         $item.Paused = if ($PSCmdlet.ParameterSetName -eq 'All') { $Paused } else { -not $item.Paused }
@@ -2080,14 +2368,14 @@ function Set-MonitorsPaused {
             $item.Controls.PauseButton.ToolTip = 'Resume monitoring'
             $item.Controls.StatusAccent.Background = $neutralBrush
             $item.StatusBrush = $neutralBrush
-        } else {
+        }
+        else {
             $item.Controls.PauseButton.Content = [char]0x275A + [char]0x275A
             $item.Controls.PauseButton.ToolTip = 'Pause monitoring'
             $item.NextDueUtc = [DateTime]::UtcNow
             if ($PSCmdlet.ParameterSetName -eq 'Single' -and $script:GlobalPaused) { $script:GlobalPaused = $false; Update-GlobalActionButton }
         }
     }
-    if ($TableGrid) { $TableGrid.Items.Refresh() }
 }
 #endregion
 #region 22.ViewModel.PingEngine
@@ -2195,7 +2483,7 @@ function Start-MonitorAttempt {
         $powerShell.Dispose()
         $script:UpdateQueue.Enqueue(@{
                 MonitorId = $Monitor.Id; AttemptId = $attemptId; Status = 'Error'; RttMs = $null
-                Address   = $null; Error = $_.Exception.Message; TimeoutMs = [int]$settings.Timeout; Timestamp = $attemptStartedUtc
+                Address = $null; Error = $_.Exception.Message; TimeoutMs = [int]$settings.Timeout; Timestamp = $attemptStartedUtc
             })
         return $false
     }
@@ -2247,10 +2535,10 @@ function Stop-PingEngine {
 #region 23.ViewModel.GlobalActions
 
 $script:GlobalActionIcons = @{
-    Reset = 'M960,0V213.333C1371.627,213.333 1706.667,548.267 1706.667,960S1371.627,1706.667 960,1706.667S213.333,1371.733 213.333,960C213.333,762.987 291.733,577.493 426.667,439.253V693.333H640V106.667H53.333V320H244.373C88.64,494.08 0,720.96 0,960C0,1489.28 430.613,1920 960,1920S1920,1489.28 1920,960S1489.387,0 960,0Z'
-    Pause = 'M5,4 L10,4 L10,20 L5,20 Z M14,4 L19,4 L19,20 L14,20 Z'
+    Reset  = 'M960,0V213.333C1371.627,213.333 1706.667,548.267 1706.667,960S1371.627,1706.667 960,1706.667S213.333,1371.733 213.333,960C213.333,762.987 291.733,577.493 426.667,439.253V693.333H640V106.667H53.333V320H244.373C88.64,494.08 0,720.96 0,960C0,1489.28 430.613,1920 960,1920S1920,1489.28 1920,960S1489.387,0 960,0Z'
+    Pause  = 'M5,4 L10,4 L10,20 L5,20 Z M14,4 L19,4 L19,20 L14,20 Z'
     Resume = 'M7,4 L7,20 L20,12 Z'
-    Clear = 'M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z'
+    Clear  = 'M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z'
 }
 function Invoke-GlobalAction {
     param([Parameter(Mandatory)][ValidateSet('Clear', 'Reset', 'PauseResume')][string]$Action)
@@ -2330,7 +2618,7 @@ function Initialize-GlobalActionSplitButton {
     $script:GlobalActionSplitButtonBorder = $Window.FindName('GlobalActionSplitButton')
     $script:GlobalActionButton = $Window.FindName('GlobalActionButton')
     $script:GlobalActionArrowButton = $Window.FindName('GlobalActionArrowButton')
-            $popup = [System.Windows.Controls.Primitives.Popup]::new()
+    $popup = [System.Windows.Controls.Primitives.Popup]::new()
     $popup.AllowsTransparency = $true
     $popup.StaysOpen = $false
     $popup.PlacementTarget = $script:GlobalActionSplitButtonBorder
@@ -2391,19 +2679,19 @@ function Set-MonitoringSettings {
 }
 function Save-Configuration {
     $config = [ordered]@{
-        HostList     = @(Get-MonitorNames)
-        OnTop        = [bool]$Window.Topmost
-        AutoSaveOnExit= [bool]$script:AutoSaveOnExit
-        HistoryDepth = [int]$script:Settings.HistoryDepth
-        Timeout      = [int]$script:Settings.Timeout
-        Interval     = [int]$script:Settings.Interval
-        BufferSize   = [int]$script:Settings.BufferSize
-        Ttl          = [int]$script:Settings.Ttl
-        DontFragment = [bool]$script:Settings.DontFragment
-        Theme        = [string]$script:ThemeName
-        ViewMode     = [string]$script:ViewMode
-        WindowWidth  = [double]$Window.Width
-        WindowHeight = [double]$Window.Height
+        HostList       = @(Get-MonitorNames)
+        OnTop          = [bool]$Window.Topmost
+        AutoSaveOnExit = [bool]$script:AutoSaveOnExit
+        HistoryDepth   = [int]$script:Settings.HistoryDepth
+        Timeout        = [int]$script:Settings.Timeout
+        Interval       = [int]$script:Settings.Interval
+        BufferSize     = [int]$script:Settings.BufferSize
+        Ttl            = [int]$script:Settings.Ttl
+        DontFragment   = [bool]$script:Settings.DontFragment
+        Theme          = [string]$script:ThemeName
+        ViewMode       = [string]$script:ViewMode
+        WindowWidth    = [double]$Window.Width
+        WindowHeight   = [double]$Window.Height
     }
     $json = $config | ConvertTo-Json -Depth 3
     [IO.File]::WriteAllText($script:ConfigPath, $json, [System.Text.UTF8Encoding]::new($false))
@@ -2420,11 +2708,11 @@ function Read-Configuration {
 function Apply-Configuration {
     param([Parameter(Mandatory)]$ConfigData)
     $clamp = { param($value, $min, $max, $fallback) if ($null -ne $value) { [Math]::Max($min, [Math]::Min($max, [int]$value)) } else { $fallback } }
-    $newInterval     = & $clamp $ConfigData.Interval 0 3600 ([int]$script:Settings.Interval)
-    $newBuffer       = & $clamp $ConfigData.BufferSize 0 65500 ([int]$script:Settings.BufferSize)
+    $newInterval = & $clamp $ConfigData.Interval 0 3600 ([int]$script:Settings.Interval)
+    $newBuffer = & $clamp $ConfigData.BufferSize 0 65500 ([int]$script:Settings.BufferSize)
     $newHistoryDepth = & $clamp $ConfigData.HistoryDepth 0 20 ([int]$script:Settings.HistoryDepth)
-    $newTtl          = & $clamp $ConfigData.Ttl 1 255 ([int]$script:Settings.Ttl)
-    $newTimeout      = if ($null -ne $ConfigData.Timeout) { [Math]::Max(1, [int]$ConfigData.Timeout) } else { [int]$script:Settings.Timeout }
+    $newTtl = & $clamp $ConfigData.Ttl 1 255 ([int]$script:Settings.Ttl)
+    $newTimeout = if ($null -ne $ConfigData.Timeout) { [Math]::Max(1, [int]$ConfigData.Timeout) } else { [int]$script:Settings.Timeout }
     $newDontFragment = if ($null -ne $ConfigData.DontFragment) { [bool]$ConfigData.DontFragment } else { [bool]$script:Settings.DontFragment }
     Set-MonitoringSettings -Interval $newInterval -Timeout $newTimeout -BufferSize $newBuffer -HistoryDepth $newHistoryDepth -Ttl $newTtl -DontFragment $newDontFragment
     if ($null -ne $ConfigData.OnTop) { $Window.Topmost = [bool]$ConfigData.OnTop }
@@ -2444,27 +2732,33 @@ function Load-Configuration {
 }
 #endregion
 if ($ExternalInvocation -or $HideConsole) { Set-ConsoleWindowState -State hidden }
-$script:ConfigPath          = Get-ConfigPath
-$script:AutoSaveOnExit     = $false
+$script:ConfigPath = Get-ConfigPath
+$script:AutoSaveOnExit = $false
 $script:LoadedConfiguration = Read-Configuration
-$script:Sequence            = 0
-$script:DraggingCard        = $null
-$script:DropIndicator       = $null
-$script:DropIndicatorOverlay= $null
-$script:DraggingRow         = $null
-$script:DraggedMonitor      = $null
-$script:ViewMode            = 'Card'
-$script:GlobalPaused        = $false
-$script:LastGlobalAction    = 'Clear'
-$script:GlobalActionPopup   = $null
-$script:Settings            = New-DefaultSettings -Interval $Interval -Timeout $Timeout -BufferSize $BufferSize -HistoryDepth $HistoryDepth
-$script:Monitors            = @{}
-$script:RetiredMonitors     = @{}
+$script:Sequence = 0
+$script:DraggingCard = $null
+$script:DropIndicator = $null
+$script:DropIndicatorOverlay = $null
+$script:DraggingRow = $null
+$script:DraggedMonitor = $null
+$script:ViewMode = 'Card'
+$script:CardElementVisibility = [ordered]@{ 
+    IP    = $true 
+    Graph = $true
+    Stats = $true
+}
+$script:GlobalPaused = $false
+$script:LastGlobalAction = 'Clear'
+$script:GlobalActionPopup = $null
+$script:ToolbarLabelsVisible = $null
+$script:Settings = New-DefaultSettings -Interval $Interval -Timeout $Timeout -BufferSize $BufferSize -HistoryDepth $HistoryDepth
+$script:Monitors = @{}
+$script:RetiredMonitors = @{}
 Initialize-PingEngine
 $configuredTheme = if ($script:ThemeRegistry.Contains([string]$script:LoadedConfiguration.Theme)) { [string]$script:LoadedConfiguration.Theme } else { $Theme }
-$script:ThemeName   = $configuredTheme
+$script:ThemeName = $configuredTheme
 $script:EffectiveThemeName = if ($configuredTheme -eq 'System') { Get-SystemThemeName } else { $configuredTheme }
-$script:ThemeColors = & $script:ThemeRegistry[$script:ThemeName]
+$script:ThemeColors = Resolve-ThemePalette -ThemeName $script:ThemeName
 $script:AppResources = New-AppResources -Colors $script:ThemeColors -ThemeName $script:EffectiveThemeName
 $cardForSizing = Read-XamlWindow -Xaml ([xml]$script:MonitorCardXaml) -ResourceDict $script:AppResources
 $cardForSizing.Measure([System.Windows.Size]::new([double]::PositiveInfinity, [double]::PositiveInfinity))
@@ -2477,38 +2771,39 @@ $Window = Read-XamlWindow -Xaml $mainXaml -ResourceDict $script:AppResources
 [System.Windows.Shell.WindowChrome]::SetWindowChrome($Window, $script:CustomWindowChrome)
 $Window.Topmost = [bool]$OnTop
 $Window.Icon = $windowIcon
-$LogoViewBox             = $Window.FindName('LogoViewBox')
-$HostInput               = $Window.FindName('HostInput')
-$InputHint               = $Window.FindName('InputHint')
-$AddButton               = $Window.FindName('AddButton')
-$MonitorScroll           = $Window.FindName('MonitorScroll')
-$MonitorPanel            = $Window.FindName('MonitorPanel')
-$StatusText              = $Window.FindName('StatusText')
-$LoadButton              = $Window.FindName('LoadButton')
-$SaveButton              = $Window.FindName('SaveButton')
-$OptionsButton           = $Window.FindName('OptionsButton')
-$ToolbarPanel            = $Window.FindName('ToolbarPanel')
-$HostInputPanel          = $Window.FindName('HostInputPanel')
-$StatusBar               = $Window.FindName('StatusBar')
-$ModeToggleButton        = $Window.FindName('ModeToggleButton')
-$GlobalActionButton      = $Window.FindName('GlobalActionButton')
+$LogoViewBox = $Window.FindName('LogoViewBox')
+$HostInput = $Window.FindName('HostInput')
+$InputHint = $Window.FindName('InputHint')
+$AddButton = $Window.FindName('AddButton')
+$MonitorScroll = $Window.FindName('MonitorScroll')
+$MonitorPanel = $Window.FindName('MonitorPanel')
+$StatusText = $Window.FindName('StatusText')
+$LoadButton = $Window.FindName('LoadButton')
+$SaveButton = $Window.FindName('SaveButton')
+$OptionsButton = $Window.FindName('OptionsButton')
+$ToolbarPanel = $Window.FindName('ToolbarPanel')
+$HostInputPanel = $Window.FindName('HostInputPanel')
+$StatusBar = $Window.FindName('StatusBar')
+$ModeToggleButton = $Window.FindName('ModeToggleButton')
+$GlobalActionButton = $Window.FindName('GlobalActionButton')
 $GlobalActionArrowButton = $Window.FindName('GlobalActionArrowButton')
-$GlobalActionIcon        = $Window.FindName('GlobalActionIcon')
-$GlobalActionText        = $Window.FindName('GlobalActionText')
-$TitleCloseButton        = $Window.FindName('TitleCloseButton')
-$TitleMinimizeButton     = $Window.FindName('TitleMinimizeButton')
-$TitleMaximizeButton     = $Window.FindName('TitleMaximizeButton')
-$DropIndicatorOverlay    = $Window.FindName('DropIndicatorOverlay')
-$CardViewContainer       = $Window.FindName('CardViewContainer')
-$ContentGrid             = $Window.FindName('ContentGrid')
-$TableViewContainer      = $Window.FindName('TableViewContainer')
-$TableGrid               = $Window.FindName('TableGrid')
-$TableDragOverlay        = $Window.FindName('TableDragOverlay')
-$TableDropLine           = $Window.FindName('TableDropLine')
-$ModalOverlay            = $Window.FindName('ModalOverlay')
-$ViewToggleButton        = $Window.FindName('ViewToggleButton')
-$ViewToggleIcon          = $Window.FindName('ViewToggleIcon')
-$ViewToggleText          = $Window.FindName('ViewToggleText')
+$GlobalActionIcon = $Window.FindName('GlobalActionIcon')
+$GlobalActionText = $Window.FindName('GlobalActionText')
+$TitleCloseButton = $Window.FindName('TitleCloseButton')
+$TitleMinimizeButton = $Window.FindName('TitleMinimizeButton')
+$TitleMaximizeButton = $Window.FindName('TitleMaximizeButton')
+$DropIndicatorOverlay = $Window.FindName('DropIndicatorOverlay')
+$CardViewContainer = $Window.FindName('CardViewContainer')
+$ContentGrid = $Window.FindName('ContentGrid')
+$TableViewContainer = $Window.FindName('TableViewContainer')
+$TableGrid = $Window.FindName('TableGrid')
+$TableDragOverlay = $Window.FindName('TableDragOverlay')
+$TableDropLine = $Window.FindName('TableDropLine')
+$ModalOverlay = $Window.FindName('ModalOverlay')
+$ResizeGrip = $Window.FindName('ResizeGrip')
+$ViewToggleButton = $Window.FindName('ViewToggleButton')
+$ViewToggleIcon = $Window.FindName('ViewToggleIcon')
+$ViewToggleText = $Window.FindName('ViewToggleText')
 $LogoViewBox.Child = New-AppLogoVisual
 $Window.FindName('TitleLogoBox').Child = New-AppLogoVisual
 $LogoViewBox.Visibility = if ($script:Monitors.Count) { 'Collapsed' } else { 'Visible' }
@@ -2547,9 +2842,11 @@ $TitleMaximizeButton.Add_Click({
 $Window.Add_StateChanged({
         if ($Window.WindowState -eq 'Maximized') {
             $TitleMaximizeButton.Content = [char]0xE923; $TitleMaximizeButton.ToolTip = 'Restore'
+            $ResizeGrip.Visibility = 'Collapsed'
         }
         else {
             $TitleMaximizeButton.Content = [char]0xE922; $TitleMaximizeButton.ToolTip = 'Maximize'
+            $ResizeGrip.Visibility = 'Visible'
         }
     })
 $ModeToggleButton.Add_Click({ Set-WindowMode -Mode $(if ($ToolbarPanel.Visibility -eq 'Visible') { 'Compact' } else { 'Standard' }) })
@@ -2569,7 +2866,7 @@ $Window.Add_KeyDown({
             $e.Handled = $true
         }
         elseif ($e.Key -eq [System.Windows.Input.Key]::N -and $ctrl) {
-            if ($ToolbarPanel.Visibility -eq 'Collapsed' -and $HostInputPanel.Visibility -ne 'Visible') {
+            if ($ToolbarPanel.Visibility -eq 'Collapsed' -and $HostInputPanel.Visibility -ne "Visible") {
                 $HostInputPanel.Visibility = 'Visible'
                 $Window.Height += $HostInputPanel.ActualHeight
             }
@@ -2606,13 +2903,12 @@ $updateTimer.Add_Tick({
         $processed = 0
         while ($processed -lt 200 -and $script:UpdateQueue.TryDequeue([ref]$result)) {
             Update-MonitorCard -Result $result
-            if ($script:Monitors.ContainsKey([string]$result.MonitorId)) {
+            if ($script:ViewMode -eq 'Table' -and $script:Monitors.ContainsKey([string]$result.MonitorId)) {
                 Update-MonitorRow -Monitor $script:Monitors[[string]$result.MonitorId] -Result $result
             }
             $result = $null
             $processed++
         }
-        if ($processed -gt 0) { $TableGrid.Items.Refresh() }
         Invoke-MonitorScheduler
     })
 $Window.Add_ContentRendered({
@@ -2621,14 +2917,28 @@ $Window.Add_ContentRendered({
         $HostInput.Focus()
     })
 $Window.Add_SizeChanged({
-        $labelsVisible = if ($Window.ActualWidth -lt $script:Config.ToolbarLabelWidthBreak) { 'Collapsed' } else { 'Visible' }
-        foreach ($btn in $LoadButton, $SaveButton, $OptionsButton, $ViewToggleButton) {
-            if ($btn.Content -is [System.Windows.Controls.StackPanel] -and $btn.Content.Children.Count -gt 1) {
-                $btn.Content.Children[1].Visibility = $labelsVisible
-            }
+    param($sender, $e)
+
+    if ($e.PreviousSize.Width -eq $e.NewSize.Width) { return }
+
+    $showLabels = $e.NewSize.Width -ge $script:Config.ToolbarLabelWidthBreak
+    if ($showLabels -eq $script:ToolbarLabelsVisible) { return }
+
+    $script:ToolbarLabelsVisible = $showLabels
+    $visibility = if ($showLabels) { 'Visible' } else { 'Collapsed' }
+
+    foreach ($btn in $LoadButton, $SaveButton, $OptionsButton, $ViewToggleButton) {
+        if ($btn.Content -is [System.Windows.Controls.StackPanel] -and $btn.Content.Children.Count -gt 1) {
+            $btn.Content.Children[1].Visibility = $visibility
         }
-        if ($GlobalActionText) { $GlobalActionText.Visibility = $labelsVisible }
-    })
+    }
+    if ($GlobalActionText) { $GlobalActionText.Visibility = $visibility }
+
+    $captionWidth = if ($showLabels) { 46 } else { 32 }
+    foreach ($button in $TitleMinimizeButton, $TitleMaximizeButton, $TitleCloseButton) {
+        $button.Width = $captionWidth
+    }
+})
 $Window.Add_Closing({
         if ($script:AutoSaveOnExit) {
             try { Save-Configuration }
