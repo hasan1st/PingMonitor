@@ -1072,7 +1072,7 @@ $script:MainWindowXaml = [xml]@'
                 <Button x:Name="AddButton" Grid.Column="1" Content="Add monitor" MinWidth="80" Padding="10,1" IsDefault="True" Style="{DynamicResource ActionButtonStyle}"/>
             </Grid>
         </Border>
-        <Grid x:Name="ContentGrid" Grid.Row="3">
+        <Grid x:Name="ContentGrid" Grid.Row="3" Background="Transparent">
             <Viewbox Name="LogoViewBox" Stretch="Uniform" VerticalAlignment="Center" HorizontalAlignment="Center" Opacity="0.15" IsHitTestVisible="False"/>
             <Grid x:Name="CardViewContainer">
                 <ScrollViewer x:Name="MonitorScroll" Margin="2" VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Disabled">
@@ -1478,6 +1478,12 @@ function New-MonitorCard {
         })
         [void]$menu.Items.Add($item)
     }
+    [void]$menu.Items.Add([System.Windows.Controls.Separator]::new())
+    $exportItem = [System.Windows.Controls.MenuItem]::new()
+    $exportItem.Header = 'Export'
+    $exportItem.Style = $Window.FindResource('ThemedContextMenuItemStyle')
+    $exportItem.Add_Click({ Export-MonitorHosts })
+    [void]$menu.Items.Add($exportItem)
     $card.ContextMenu = $menu
     Apply-CardVisibility -UI $controls    
 
@@ -2042,6 +2048,11 @@ function Update-TableRowSequences {
 }
 function Invoke-RowActionMenuItemClick {
     param($Sender, $EventArgs)
+    if ([string]$Sender.Tag -eq 'Export') {
+        Export-MonitorHosts
+        $EventArgs.Handled = $true
+        return
+    }
     $parts = ([string]$Sender.Tag).Split('|')
     if (-not $script:Monitors.ContainsKey($parts[0])) { return }
     $target = $script:Monitors[$parts[0]]
@@ -2082,6 +2093,8 @@ function Show-RowActionMenu {
     [void]$menu.Items.Add((New-RowActionMenuItem -Header $pauseText -IconData $pauseIcon -Tag "$($Monitor.Id)|Pause"))
     
     [void]$menu.Items.Add((New-RowActionMenuItem -Header 'Remove' -IconData $script:GlobalActionIcons.Clear -Tag "$($Monitor.Id)|Remove"))
+    [void]$menu.Items.Add([System.Windows.Controls.Separator]::new())
+    [void]$menu.Items.Add((New-RowActionMenuItem -Header 'Export' -Tag 'Export')) #-IconData $script:GlobalActionIcons.Export
     
     $menu.IsOpen = $true
 }
@@ -2264,7 +2277,7 @@ function Add-Monitor {
     $HostName = $HostName.Trim()
     $validation = Test-ValidHostName -HostName $HostName
     if ([string]::IsNullOrWhiteSpace($HostName) -or -not $validation.IsValid) {
-        Show-MessageBox -Message 'Enter a valid hostname or IP address.' -Title 'Input required' -Icon Warning
+        Show-MessageBox -Message "Invalid hostname or IP address: `'$HostName`'" -Title 'Input required' -Icon Warning
         $HostInput.Focus()
         return
     }
@@ -2295,6 +2308,45 @@ function Add-Monitor {
     $HostInput.Clear()
     $HostInput.Focus()
     Set-StatusText ("Monitoring {0} host(s)" -f $script:Monitors.Count)
+}
+function Export-MonitorHosts {
+    $dialog = [Microsoft.Win32.SaveFileDialog]::new()
+    $dialog.Filter = 'Text files (*.txt)|*.txt|All files (*.*)|*.*'
+    $dialog.DefaultExt = 'txt'
+    $dialog.AddExtension = $true
+    $dialog.FileName = 'PingMonitor-hosts.txt'
+    if (-not $dialog.ShowDialog($Window)) { return }
+
+    try {
+        [string[]]$hostNames = @(Get-MonitorNames)
+        [IO.File]::WriteAllLines($dialog.FileName, $hostNames, [System.Text.UTF8Encoding]::new($false))
+        Set-StatusText ("Exported {0} host(s) to {1}" -f $hostNames.Count, $dialog.FileName)
+    }
+    catch {
+        Show-MessageBox -Message "The hosts could not be exported.`n`n$($_.Exception.Message)" -Title 'Export error' -Icon Error
+    }
+}
+function Import-MonitorHosts {
+    $dialog = [Microsoft.Win32.OpenFileDialog]::new()
+    $dialog.Filter = 'Text files (*.txt)|*.txt|All files (*.*)|*.*'
+    $dialog.Multiselect = $false
+    if (-not $dialog.ShowDialog($Window)) { return }
+
+    try { $hostNames = [IO.File]::ReadAllLines($dialog.FileName) }
+    catch {
+        Show-MessageBox -Message "The hosts could not be imported.`n`n$($_.Exception.Message)" -Title 'Import error' -Icon Error
+        return
+    }
+    $existingMonitorCount = $script:Monitors.Count
+    foreach ($hostName in $hostNames) {
+        if ([string]::IsNullOrWhiteSpace($hostName)) { continue }
+        $monitorCount = $script:Monitors.Count
+        [void](Add-Monitor -HostName $hostName)
+    }
+    $TotalNewHosts = $script:Monitors.Count - $existingMonitorCount
+    if ($TotalNewHosts -ge 0) {
+        Show-MessageBox -Title "Import" -Message "$TotalNewHosts hosts added."
+    }
 }
 function Stop-Monitor {
     param([Parameter(Mandatory)]$Monitor, [switch]$RemoveCard)
@@ -2539,6 +2591,7 @@ $script:GlobalActionIcons = @{
     Pause  = 'M5,4 L10,4 L10,20 L5,20 Z M14,4 L19,4 L19,20 L14,20 Z'
     Resume = 'M7,4 L7,20 L20,12 Z'
     Clear  = 'M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z'
+    Export = 'M5,20H19V18H5V20M19,9H15V3H9V9H5L12,16L19,9Z'
 }
 function Invoke-GlobalAction {
     param([Parameter(Mandatory)][ValidateSet('Clear', 'Reset', 'PauseResume')][string]$Action)
@@ -2795,6 +2848,14 @@ $TitleMaximizeButton = $Window.FindName('TitleMaximizeButton')
 $DropIndicatorOverlay = $Window.FindName('DropIndicatorOverlay')
 $CardViewContainer = $Window.FindName('CardViewContainer')
 $ContentGrid = $Window.FindName('ContentGrid')
+$importMenu = [System.Windows.Controls.ContextMenu]::new()
+$importMenu.Style = $Window.FindResource('ThemedContextMenuStyle')
+$importItem = [System.Windows.Controls.MenuItem]::new()
+$importItem.Header = 'Import'
+$importItem.Style = $Window.FindResource('ThemedContextMenuItemStyle')
+$importItem.Add_Click({ Import-MonitorHosts })
+[void]$importMenu.Items.Add($importItem)
+$ContentGrid.ContextMenu = $importMenu
 $TableViewContainer = $Window.FindName('TableViewContainer')
 $TableGrid = $Window.FindName('TableGrid')
 $TableDragOverlay = $Window.FindName('TableDragOverlay')
