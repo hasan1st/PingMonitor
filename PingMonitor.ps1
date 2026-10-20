@@ -2332,13 +2332,14 @@ function Import-MonitorHosts {
     $dialog.Multiselect = $false
     if (-not $dialog.ShowDialog($Window)) { return }
 
-    try { $hostNames = [IO.File]::ReadAllLines($dialog.FileName) }
+    try { $hostsList = [IO.File]::ReadAllLines($dialog.FileName) }
     catch {
         Show-MessageBox -Message "The hosts could not be imported.`n`n$($_.Exception.Message)" -Title 'Import error' -Icon Error
         return
     }
     $existingMonitorCount = $script:Monitors.Count
-    foreach ($hostName in $hostNames) {
+    foreach ($hostName in $hostsList) {
+        $hostname = $hostName -replace '[^a-zA-Z0-9.:-]', ''
         if ([string]::IsNullOrWhiteSpace($hostName)) { continue }
         $monitorCount = $script:Monitors.Count
         [void](Add-Monitor -HostName $hostName)
