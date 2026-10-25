@@ -9,7 +9,8 @@ param(
     [ValidateRange(0, 20)] [int]$HistoryDepth = 7,
     [ValidateSet('Light', 'Dark', 'System')] [string]$Theme = 'System',
     [switch]$OnTop,
-    [switch]$HideConsole
+    [switch]$HideConsole,
+    [switch]$IgnoreConfiguration
 )
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase
 $ExternalInvocation = $MyInvocation.CommandOrigin -eq 'Internal' -or $MyInvocation.InvocationName -eq '&'
@@ -1413,7 +1414,7 @@ function Apply-CardVisibility {
 }
 function New-MonitorCard {
     param([Parameter(Mandatory)][string]$HostName)
-    [xml]$xaml = $script:MonitorCardXaml
+    $xaml = $script:MonitorCardXaml
     $card = Read-XamlWindow -Xaml $xaml -ResourceDict $script:AppResources
     $controls = @{
         Card         = $card
@@ -2814,7 +2815,7 @@ $script:ThemeName = $configuredTheme
 $script:EffectiveThemeName = if ($configuredTheme -eq 'System') { Get-SystemThemeName } else { $configuredTheme }
 $script:ThemeColors = Resolve-ThemePalette -ThemeName $script:ThemeName
 $script:AppResources = New-AppResources -Colors $script:ThemeColors -ThemeName $script:EffectiveThemeName
-$cardForSizing = Read-XamlWindow -Xaml ([xml]$script:MonitorCardXaml) -ResourceDict $script:AppResources
+$cardForSizing = Read-XamlWindow -Xaml $script:MonitorCardXaml -ResourceDict $script:AppResources
 $cardForSizing.Measure([System.Windows.Size]::new([double]::PositiveInfinity, [double]::PositiveInfinity))
 $script:MonitorCardFootprint = $cardForSizing.DesiredSize
 $script:PreCompactHeight = $null
@@ -3026,7 +3027,9 @@ $Window.Add_Closing({
         Set-ConsoleWindowState -State restored
     })
 Register-SystemThemeWatcher
-if ($script:LoadedConfiguration) { Apply-Configuration -ConfigData $script:LoadedConfiguration }
+if ($script:LoadedConfiguration -and -not $IgnoreConfiguration) { 
+    Apply-Configuration -ConfigData $script:LoadedConfiguration 
+}
 $Window.UpdateLayout()
 $updateTimer.Start()
 [void]$Window.ShowDialog()
