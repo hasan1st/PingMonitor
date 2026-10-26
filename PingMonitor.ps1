@@ -13,16 +13,101 @@ param(
     [switch]$IgnoreConfiguration
 )
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase
+if (Test-Path (Join-Path $PSScriptRoot 'PingMonitor.dll')) {
+    Add-Type -Path (Join-Path $PSScriptRoot 'PingMonitor.dll')
+    Write-Verbose "Loaded PingMonitor.dll from $PSScriptRoot"
+}
 $ExternalInvocation = $MyInvocation.CommandOrigin -eq 'Internal' -or $MyInvocation.InvocationName -eq '&'
 
-if (-not ('PingMonitor.MonitorModel' -as [type])) {
-    $monitorModelCode = @'
+#region 00.Config
+
+$script:AppUserModelId = 'HK.WPF.PingMonitor'
+
+$script:Config = [pscustomobject]@{
+    GraphWidth             = 198.0
+    GraphHeight            = 45.0
+    GraphMaxRttMs          = 300.0
+    GraphBarGap            = 2.0
+    GraphMinBarHeight      = 5.0
+    GraphErrorBarHeight    = 2.0
+    DragThresholdPx        = 5 
+    InsertBeforeWeight     = 0.8
+    MaxConcurrentPings     = 20
+    ToolbarLabelWidthBreak = 462 
+    ScrollBarWidth         = 10
+}
+
+$script:RttSettings = [pscustomobject]@{
+    WarningMs = 150
+    CriticalMs = 250
+    Colors = [ordered]@{
+        Success  = '#10B981'
+        Warning  = '#F59E0B'
+        Critical = '#DC2626'
+        Failure  = '#EF4444'
+        Neutral  = '#94A3B8'
+    }
+}
+$script:RttColors = @{}
+foreach ($name in $script:RttSettings.Colors.Keys) {
+    $script:RttColors[$name] = [System.Windows.Media.ColorConverter]::ConvertFromString($script:RttSettings.Colors[$name])
+}
+
+function New-DefaultSettings {
+    param(
+        [int]$Interval = 4,
+        [int]$Timeout = 1000,
+        [int]$BufferSize = 32,
+        [int]$HistoryDepth = 7,
+        [int]$Ttl = 128,
+        [bool]$DontFragment = $false
+    )
+    [pscustomobject]@{
+        Interval     = $Interval
+        Timeout      = $Timeout
+        BufferSize   = $BufferSize
+        HistoryDepth = $HistoryDepth
+        Ttl          = $Ttl
+        DontFragment = $DontFragment
+    }
+}
+function Get-ConfigPath {
+    $scriptPath = $PSCommandPath
+    if ([string]::IsNullOrWhiteSpace($scriptPath)) {
+        $scriptPath = $MyInvocation.MyCommand.Path
+    }
+    if ([string]::IsNullOrWhiteSpace($scriptPath)) {
+        return (Join-Path $PWD 'PingMonitor.json')
+    }
+    $directory = Split-Path -Parent $scriptPath
+    $name = [IO.Path]::GetFileNameWithoutExtension($scriptPath)
+    Join-Path $directory "$name.json"
+}
+#endregion
+#region 01.Native
+
+if (-not ('PingMonitor.NativeMethods' -as [type]) -or -not ('PingMonitor.MonitorModel' -as [type])) {
+    Write-Verbose "Compiling native helper type PingMonitor.NativeMethods and PingMonitor.MonitorModel"
+    $nativeCode = @'
 using System;
 using System.Collections;
 using System.ComponentModel;
 using System.Reflection;
+using System.Runtime.InteropServices;
 namespace PingMonitor
 {
+    public static class NativeMethods
+    {
+        [DllImport("kernel32.dll")] public static extern IntPtr GetConsoleWindow();
+        [DllImport("user32.dll")]   public static extern bool ShowWindow(IntPtr handle, int command);
+        [DllImport("dwmapi.dll")]   public static extern int DwmSetWindowAttribute(
+            IntPtr hwnd, int attribute, ref int value, int valueSize);
+    }
+    public class TaskbarFix
+    {
+        [DllImport("shell32.dll")]  public static extern int SetCurrentProcessExplicitAppUserModelID(
+            [MarshalAs(UnmanagedType.LPWStr)] string AppID);
+    }
     public sealed class MonitorModel : INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler PropertyChanged;
@@ -104,96 +189,6 @@ namespace PingMonitor
         public object PowerShell { get { return _PowerShell; } set { SetProperty(ref _PowerShell, value, "PowerShell"); } }
         private object _AsyncResult;
         public object AsyncResult { get { return _AsyncResult; } set { SetProperty(ref _AsyncResult, value, "AsyncResult"); } }
-    }
-}
-'@
-    Add-Type -TypeDefinition $monitorModelCode -ErrorAction Stop
-}
-
-#region 00.Config
-
-$script:AppUserModelId = 'HK.WPF.PingMonitor'
-
-$script:Config = [pscustomobject]@{
-    GraphWidth             = 198.0
-    GraphHeight            = 45.0
-    GraphMaxRttMs          = 300.0
-    GraphBarGap            = 2.0
-    GraphMinBarHeight      = 5.0
-    GraphErrorBarHeight    = 2.0
-    DragThresholdPx        = 5 
-    InsertBeforeWeight     = 0.8
-    MaxConcurrentPings     = 20
-    ToolbarLabelWidthBreak = 462 
-    ScrollBarWidth         = 10
-}
-
-$script:RttSettings = [pscustomobject]@{
-    WarningMs = 150
-    CriticalMs = 250
-    Colors = [ordered]@{
-        Success  = '#10B981'
-        Warning  = '#F59E0B'
-        Critical = '#DC2626'
-        Failure  = '#EF4444'
-        Neutral  = '#94A3B8'
-    }
-}
-$script:RttColors = @{}
-foreach ($name in $script:RttSettings.Colors.Keys) {
-    $script:RttColors[$name] = [System.Windows.Media.ColorConverter]::ConvertFromString($script:RttSettings.Colors[$name])
-}
-
-function New-DefaultSettings {
-    param(
-        [int]$Interval = 4,
-        [int]$Timeout = 1000,
-        [int]$BufferSize = 32,
-        [int]$HistoryDepth = 7,
-        [int]$Ttl = 128,
-        [bool]$DontFragment = $false
-    )
-    [pscustomobject]@{
-        Interval     = $Interval
-        Timeout      = $Timeout
-        BufferSize   = $BufferSize
-        HistoryDepth = $HistoryDepth
-        Ttl          = $Ttl
-        DontFragment = $DontFragment
-    }
-}
-function Get-ConfigPath {
-    $scriptPath = $PSCommandPath
-    if ([string]::IsNullOrWhiteSpace($scriptPath)) {
-        $scriptPath = $MyInvocation.MyCommand.Path
-    }
-    if ([string]::IsNullOrWhiteSpace($scriptPath)) {
-        return (Join-Path $PWD 'PingMonitor.json')
-    }
-    $directory = Split-Path -Parent $scriptPath
-    $name = [IO.Path]::GetFileNameWithoutExtension($scriptPath)
-    Join-Path $directory "$name.json"
-}
-#endregion
-#region 01.Native
-
-if (-not ('PingMonitor.NativeMethods' -as [type])) {
-    $nativeCode = @'
-using System;
-using System.Runtime.InteropServices;
-namespace PingMonitor
-{
-    public static class NativeMethods
-    {
-        [DllImport("kernel32.dll")] public static extern IntPtr GetConsoleWindow();
-        [DllImport("user32.dll")]   public static extern bool ShowWindow(IntPtr handle, int command);
-        [DllImport("dwmapi.dll")]   public static extern int DwmSetWindowAttribute(
-            IntPtr hwnd, int attribute, ref int value, int valueSize);
-    }
-    public class TaskbarFix
-    {
-        [DllImport("shell32.dll")]  public static extern int SetCurrentProcessExplicitAppUserModelID(
-            [MarshalAs(UnmanagedType.LPWStr)] string AppID);
     }
 }
 '@
@@ -990,7 +985,7 @@ $script:MainWindowXaml = [xml]@'
         <Border x:Name="TitleBar" Grid.Row="0" Height="32" Background="{DynamicResource Theme.Toolbar.Background}" BorderBrush="{DynamicResource Theme.Divider}" BorderThickness="0,0,0,1">
             <DockPanel>
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                    <Button x:Name="ModeToggleButton" Content="&#xE70E;" ToolTip="Compact mode (F9)" Style="{DynamicResource CaptionButtonStyle}" Width="34"/>
+                    <Button x:Name="ModeToggleButton" Content="&#xE70E;" ToolTip="Compact mode (F9)" Style="{DynamicResource CaptionButtonStyle}" Height="28" Width="28"/>
                     <Button x:Name="TitleMinimizeButton" Content="&#xE921;" ToolTip="Minimize" Style="{DynamicResource CaptionButtonStyle}"/>
                     <Button x:Name="TitleMaximizeButton" Content="&#xE922;" ToolTip="Maximize" Style="{DynamicResource CaptionButtonStyle}"/>
                     <Button x:Name="TitleCloseButton" Content="&#xE8BB;" ToolTip="Close" Style="{DynamicResource CaptionCloseButtonStyle}"/>
@@ -2276,8 +2271,9 @@ function New-MonitorModel {
 function Add-Monitor {
     param([string]$HostName)
     $HostName = $HostName.Trim()
+    if ([string]::IsNullOrWhiteSpace($HostName)) {return}
     $validation = Test-ValidHostName -HostName $HostName
-    if ([string]::IsNullOrWhiteSpace($HostName) -or -not $validation.IsValid) {
+    if (-not $validation.IsValid) {
         Show-MessageBox -Message "Invalid hostname or IP address: `'$HostName`'" -Title 'Input required' -Icon Warning
         $HostInput.Focus()
         return
@@ -2931,7 +2927,7 @@ $Window.Add_KeyDown({
         elseif ($e.Key -eq [System.Windows.Input.Key]::N -and $ctrl) {
             if ($ToolbarPanel.Visibility -eq 'Collapsed' -and $HostInputPanel.Visibility -ne "Visible") {
                 $HostInputPanel.Visibility = 'Visible'
-                $Window.Height += $HostInputPanel.ActualHeight
+                #$Window.Height += $HostInputPanel.ActualHeight
             }
             $HostInput.Focus()
             $HostInput.SelectAll()
@@ -2952,10 +2948,16 @@ $Window.Add_KeyDown({
         }
         elseif ($e.Key -eq [System.Windows.Input.Key]::Escape) {
             if ($HostInputPanel.Visibility -eq 'Visible' -and $ToolbarPanel.Visibility -eq 'Collapsed') {
-                $Window.Height -= $HostInputPanel.ActualHeight
+                #$Window.Height -= $HostInputPanel.ActualHeight
                 $HostInputPanel.Visibility = 'Collapsed'
             }
             $HostInput.Clear()
+            $e.Handled = $true
+        }
+        elseif ($e.Key -eq [System.Windows.Input.Key]::T -and $ctrl) {
+            if ($Window.Topmost) { $Window.Topmost = $false; Set-StatusText 'Window is no longer on top' }
+            else { $Window.Topmost = $true; Set-StatusText 'Window is now on top'
+            }
             $e.Handled = $true
         }
     })
