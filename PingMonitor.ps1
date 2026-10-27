@@ -904,6 +904,15 @@ $script:AppLogoXaml = [xml]@'
     <Ellipse Canvas.Left="34.5" Canvas.Top="18.8" Width="10.5" Height="10.5" Fill="{DynamicResource Theme.Brand.StatusDot}" Stroke="{DynamicResource Theme.Accent}"/>
 </Canvas>
 '@
+function New-TransferMenuIcon {
+    param([switch]$Export)
+    $path = [System.Windows.Shapes.Path]::new()
+    $data = if ($Export) { 'M4,18H20V21H4Z M10,16V8H6L12,2 18,8H14V16Z' } else { 'M4,18H20V21H4Z M10,2H14V10H18L12,16 6,10H10Z' }
+    $path.Data = [System.Windows.Media.Geometry]::Parse($data)
+    $path.Width = 14; $path.Height = 14; $path.Stretch = 'Uniform'
+    $path.SetResourceReference([System.Windows.Shapes.Shape]::FillProperty, 'Theme.MenuItem.IconFill')
+    return $path
+}
 function New-AppLogoVisual {
     Read-XamlWindow -Xaml $script:AppLogoXaml -ResourceDict $script:AppResources
 }
@@ -994,67 +1003,40 @@ $script:MainWindowXaml = [xml]@'
                 <TextBlock Text="PingMonitor" VerticalAlignment="Center" FontSize="12" Foreground="{DynamicResource Theme.Caption.Foreground}"/>
             </DockPanel>
         </Border>
-        <Border x:Name="ToolbarPanel" Grid.Row="1" Background="{DynamicResource Theme.Toolbar.Background}" BorderBrush="{DynamicResource Theme.Divider}" BorderThickness="0,0,0,1" Padding="1,8">
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource Theme.Accent}" VerticalAlignment="Center" Margin="13,0,8,0"/>
-                    <Button x:Name="LoadButton" Style="{DynamicResource PrimaryButtonStyle}" ToolTip="Load configuration (F2)">
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                            <Path Data="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" Width="16" Height="16" Stretch="Uniform" SnapsToDevicePixels="True"/>
-                            <TextBlock Text="Load" VerticalAlignment="Center" Margin="6,0,0,0"/>
-                        </StackPanel>
-                    </Button>
-                    <Button x:Name="SaveButton" Style="{DynamicResource PrimaryButtonStyle}" ToolTip="Save configuration (F3 / Ctrl+S)">
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                            <Path Data="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z" Width="16" Height="16" Stretch="Uniform" SnapsToDevicePixels="True"/>
-                            <TextBlock Text="Save" VerticalAlignment="Center" Margin="6,0,0,0"/>
-                        </StackPanel>
-                    </Button>
-                    <Rectangle Style="{DynamicResource ToolbarSeparatorStyle}"/>
-                    <Border x:Name="GlobalActionSplitButton" Height="32" Margin="0,0,4,0" BorderThickness="1" CornerRadius="4" SnapsToDevicePixels="True">
-                        <Border.Style>
-                            <Style TargetType="Border">
-                                <Setter Property="Background" Value="Transparent"/>
-                                <Setter Property="BorderBrush" Value="{DynamicResource Theme.Border}"/>
-                                <Style.Triggers>
-                                    <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter Property="Background" Value="{DynamicResource Theme.Hover.Background}"/>
-                                        <Setter Property="BorderBrush" Value="{DynamicResource Theme.Accent}"/>
-                                    </Trigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Border.Style>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="1"/>
-                                <ColumnDefinition Width="12"/>
-                            </Grid.ColumnDefinitions>
-                            <Button x:Name="GlobalActionButton" Grid.Column="0" Style="{DynamicResource SplitButtonPartStyle}" Padding="10,6">
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                    <Path x:Name="GlobalActionIcon" Width="14" Height="14" Stretch="Uniform" Margin="6,0,0,0" SnapsToDevicePixels="True"/>
-                                    <TextBlock x:Name="GlobalActionText" Text="Clear" VerticalAlignment="Center" Margin="4,0,4,0"/>
-                                </StackPanel>
-                            </Button>
-                            <Border Grid.Column="1" Width="1" Height="18" VerticalAlignment="Center" Background="{DynamicResource Theme.Border}"/>
-                            <Button x:Name="GlobalActionArrowButton" Grid.Column="2" Style="{DynamicResource SplitButtonPartStyle}" Padding="0" ToolTip="More actions">
-                                <Path Width="6" Height="5" Stretch="Fill" Margin="0,2,3,0" Data="M0,0 L8,0 L4,5 Z"/>
-                            </Button>
-                        </Grid>
-                    </Border>
-                    <Button x:Name="ViewToggleButton" Style="{DynamicResource PrimaryButtonStyle}" ToolTip="Switch to table view">
+        <Border x:Name="ToolbarPanel" Grid.Row="1" Background="{DynamicResource Theme.Toolbar.Background}" BorderBrush="{DynamicResource Theme.Divider}" BorderThickness="0,0,0,1" Padding="6,8"><StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+<Button x:Name="GlobalPauseButton" Style="{DynamicResource PrimaryButtonStyle}" ToolTip="Pause all monitors (F6)"><StackPanel Orientation="Horizontal"><Path x:Name="GlobalPauseIcon" Data="M5,4 L10,4 L10,20 L5,20 Z M14,4 L19,4 L19,20 L14,20 Z" Width="16" Height="16" Stretch="Uniform"/><TextBlock x:Name="GlobalPauseText" Text="Pause" VerticalAlignment="Center" Margin="6,0,0,0"/></StackPanel></Button>
+<Button x:Name="GlobalResetButton" Style="{DynamicResource PrimaryButtonStyle}" ToolTip="Reset all monitor statistics (F5)"><StackPanel Orientation="Horizontal"><Path x:Name="GlobalResetIcon" Data="M960,0V213.333C1371.627,213.333 1706.667,548.267 1706.667,960S1371.627,1706.667 960,1706.667S213.333,1371.733 213.333,960C213.333,762.987 291.733,577.493 426.667,439.253V693.333H640V106.667H53.333V320H244.373C88.64,494.08 0,720.96 0,960C0,1489.28 430.613,1920 960,1920S1920,1489.28 1920,960S1489.387,0 960,0Z" Width="16" Height="16" Stretch="Uniform"/><TextBlock x:Name="GlobalResetText" Text="Reset" VerticalAlignment="Center" Margin="6,0,0,0"/></StackPanel></Button>
+<Button x:Name="GlobalClearButton" Style="{DynamicResource PrimaryButtonStyle}" ToolTip="Clear all monitors (F4)"><StackPanel Orientation="Horizontal"><Path x:Name="GlobalClearIcon" Data="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" Width="16" Height="16" Stretch="Uniform"/><TextBlock x:Name="GlobalClearText" Text="Clear" VerticalAlignment="Center" Margin="6,0,0,0"/></StackPanel></Button>
+<Rectangle Style="{DynamicResource ToolbarSeparatorStyle}"/>
+<Button x:Name="ViewToggleButton" Style="{DynamicResource PrimaryButtonStyle}" ToolTip="Switch to table view (F8)">
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                             <Path x:Name="ViewToggleIcon" Width="16" Height="16" Stretch="Uniform" Data="M3,3H21V21H3V3M5,5V8H19V5H5M5,10V14H19V10H5M5,16V19H19V16H5Z" SnapsToDevicePixels="True"/>
                             <TextBlock x:Name="ViewToggleText" Text="Table" VerticalAlignment="Center" Margin="6,0,0,0"/>
                         </StackPanel>
                     </Button>
-                    <Button x:Name="OptionsButton" Style="{DynamicResource PrimaryButtonStyle}" ToolTip="Monitoring options (Ctrl+,)">
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+<Rectangle Style="{DynamicResource ToolbarSeparatorStyle}"/>
+<Border x:Name="OptionsSplitButton" Height="32" Margin="0,0,4,0" BorderThickness="1" BorderBrush="{DynamicResource Theme.Border}" CornerRadius="4">
+<Grid><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="1"/><ColumnDefinition Width="22"/></Grid.ColumnDefinitions>
+<Button x:Name="OptionsButton" MinWidth="36" Style="{DynamicResource SplitButtonPartStyle}" ToolTip="Monitoring options (Ctrl+,)"><StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="10,0">
                             <Path Data="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" Width="16" Height="16" Stretch="Uniform" SnapsToDevicePixels="True"/>
                             <TextBlock Text="Options" VerticalAlignment="Center" Margin="6,0,0,0"/>
+                        </StackPanel></Button>
+<Border Grid.Column="1" Height="18" Background="{DynamicResource Theme.Border}"/>
+<Button x:Name="OptionsArrowButton" Grid.Column="2" Style="{DynamicResource SplitButtonPartStyle}" ToolTip="Save (F3 / Ctrl+S) or load (F2) configuration"><Path Width="6" Height="5" Stretch="Fill" Data="M0,0 L8,0 L4,5 Z"/></Button>
+<Popup x:Name="OptionsPopup" PlacementTarget="{Binding ElementName=OptionsSplitButton}" Placement="Bottom" VerticalOffset="3" AllowsTransparency="True" StaysOpen="False">
+<Border Background="{DynamicResource Theme.Popup.Background}" BorderBrush="{DynamicResource Theme.Popup.Border}" BorderThickness="1" CornerRadius="7" Padding="3" MinWidth="100"><StackPanel><Button x:Name="SaveButton" Style="{DynamicResource SplitMenuButtonStyle}" ToolTip="Save configuration (F3 / Ctrl+S)">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                            <Path Data="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z" Width="16" Height="16" Stretch="Uniform" SnapsToDevicePixels="True"/>
+                            <TextBlock Text="Save" VerticalAlignment="Center" Margin="6,0,0,0"/>
                         </StackPanel>
                     </Button>
-                </StackPanel>
-            </Border>
+<Button x:Name="LoadButton" Style="{DynamicResource SplitMenuButtonStyle}" ToolTip="Load configuration (F2)">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                            <Path Data="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" Width="16" Height="16" Stretch="Uniform" SnapsToDevicePixels="True"/>
+                            <TextBlock Text="Load" VerticalAlignment="Center" Margin="6,0,0,0"/>
+                        </StackPanel>
+                    </Button></StackPanel></Border></Popup></Grid></Border>
+</StackPanel></Border>
         <Border x:Name="HostInputPanel" Grid.Row="2" Margin="6,3,6,2" Background="{DynamicResource Theme.Card.Background}" BorderBrush="{DynamicResource Theme.Border}" BorderThickness="1" CornerRadius="7" Padding="4">
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -1194,7 +1176,7 @@ $script:MainWindowXaml = [xml]@'
         <Border x:Name="StatusBar" Grid.Row="4" Background="{DynamicResource Theme.Toolbar.Background}" BorderBrush="{DynamicResource Theme.Divider}" BorderThickness="0,1,0,0" Padding="14,7">
             <DockPanel>
                 <TextBlock x:Name="StatusText" Text="Ready" Foreground="{DynamicResource Theme.Text.Secondary}"/>
-                <TextBlock Text="F2 Load   F3 / Ctrl+S Save   F4 Clear   Ctrl+, Options   F8 View   F9 Compact" Foreground="{DynamicResource Theme.Text.Muted}" HorizontalAlignment="Right"/>
+                <TextBlock Text="F2 Load   F3 / Ctrl+S Save   F4 Clear   F5 Reset   F6 Pause/Resume   Ctrl+, Options   F8 View   F9 Compact" Foreground="{DynamicResource Theme.Text.Muted}" HorizontalAlignment="Right"/>
             </DockPanel>
         </Border>
         <Border x:Name="ModalOverlay" Grid.Row="0" Grid.RowSpan="5" Background="{DynamicResource Theme.Overlay.Background}" Visibility="Collapsed" IsHitTestVisible="False"/>
@@ -1321,7 +1303,7 @@ function Set-ViewMode {
 #region 12.Views.MonitorCard
 
 $script:MonitorCardXaml = [xml]@'
-<Border xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+<Border x:Name="MonitorCardRoot" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Width="222" Height="Auto" Margin="4" Padding="0" Background="{DynamicResource Theme.Card.Background}" BorderBrush="{DynamicResource Theme.Card.Border}" BorderThickness="1" CornerRadius="10">
     <Border.Effect>
         <DropShadowEffect BlurRadius="12" ShadowDepth="2" Opacity="0.06" Color="{DynamicResource Theme.Shadow.Color}"/>
@@ -1338,7 +1320,7 @@ $script:MonitorCardXaml = [xml]@'
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-            <Grid Grid.Row="0">
+            <Grid Grid.Row="0" MinHeight="24">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
@@ -1348,6 +1330,16 @@ $script:MonitorCardXaml = [xml]@'
                     <TextBlock x:Name="IpText" FontSize="11" Foreground="{DynamicResource Theme.Text.Secondary}" Margin="0,1,0,0" TextTrimming="CharacterEllipsis"/>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
+                    <StackPanel.Style>
+                        <Style TargetType="StackPanel">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsMouseOver, ElementName=MonitorCardRoot}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
                     <Button x:Name="ResetButton" Width="22" Height="22" Content="&#x21BB;" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,2" Foreground="{DynamicResource Theme.Text.Muted}" ToolTip="Reset statistics" Style="{DynamicResource IconButtonStyle}"/>
                     <Button x:Name="PauseButton" Width="22" Height="22" Content="&#x275A;&#x275A;" FontSize="12" Foreground="{DynamicResource Theme.Text.Muted}" ToolTip="Pause monitoring" Style="{DynamicResource IconButtonStyle}"/>
                     <Button x:Name="RemoveButton" Width="22" Height="22" Content="&#x2716;" FontSize="9" Foreground="{DynamicResource Theme.Text.Muted}" ToolTip="Remove monitor" Style="{DynamicResource IconButtonStyle}"/>
@@ -1390,7 +1382,7 @@ $script:MonitorCardXaml = [xml]@'
     </Grid>
 </Border>
 '@
-function Apply-CardVisibility {
+function Set-CardVisibility {
     param([Parameter(Mandatory)][hashtable]$UI)
 
     $elements = @(
@@ -1468,7 +1460,7 @@ function New-MonitorCard {
             $script:CardElementVisibility[[string]$sender.Tag] = [bool]$sender.IsChecked
             
             foreach ($mon in $script:Monitors.Values) {
-                Apply-CardVisibility -UI $mon.Controls
+                Set-CardVisibility -UI $mon.Controls
             }
             Update-WindowMinSize
         })
@@ -1477,11 +1469,12 @@ function New-MonitorCard {
     [void]$menu.Items.Add([System.Windows.Controls.Separator]::new())
     $exportItem = [System.Windows.Controls.MenuItem]::new()
     $exportItem.Header = 'Export'
+    $exportItem.Icon = New-TransferMenuIcon -Export
     $exportItem.Style = $Window.FindResource('ThemedContextMenuItemStyle')
     $exportItem.Add_Click({ Export-MonitorHosts })
     [void]$menu.Items.Add($exportItem)
     $card.ContextMenu = $menu
-    Apply-CardVisibility -UI $controls    
+    Set-CardVisibility -UI $controls    
 
     return $controls
 }
@@ -2066,7 +2059,7 @@ function New-RowActionMenuItem {
     $item.Tag = $Tag
     $item.Foreground = Get-ThemeBrush -Key 'MenuItem.TextFill'
     $icon = [System.Windows.Shapes.Path]::new()
-    $icon.Data = [System.Windows.Media.Geometry]::Parse($IconData)
+    if ($IconData) { $icon.Data = [System.Windows.Media.Geometry]::Parse($IconData) }
     $icon.Fill = Get-ThemeBrush -Key 'MenuItem.IconFill'
     $icon.Width = 14; $icon.Height = 14; $icon.Stretch = 'Uniform'
     $item.Icon = $icon
@@ -2090,7 +2083,10 @@ function Show-RowActionMenu {
     
     [void]$menu.Items.Add((New-RowActionMenuItem -Header 'Remove' -IconData $script:GlobalActionIcons.Clear -Tag "$($Monitor.Id)|Remove"))
     [void]$menu.Items.Add([System.Windows.Controls.Separator]::new())
-    [void]$menu.Items.Add((New-RowActionMenuItem -Header 'Export' -Tag 'Export')) #-IconData $script:GlobalActionIcons.Export
+    $exportItem = New-RowActionMenuItem -Header 'Export' -Tag 'Export'
+    $exportItem.Style = $Window.FindResource('ThemedContextMenuItemStyle')
+    $exportItem.Icon = New-TransferMenuIcon -Export
+    [void]$menu.Items.Add($exportItem)
     
     $menu.IsOpen = $true
 }
@@ -2601,106 +2597,26 @@ function Invoke-GlobalAction {
     $script:LastGlobalAction = $Action
     Update-GlobalActionButton
 }
-function New-GlobalActionMenuItem {
-    param([Parameter(Mandatory)][string]$Action, [Parameter(Mandatory)][string]$Text, [Parameter(Mandatory)][string]$IconData)
-    $button = [System.Windows.Controls.Button]::new()
-    $button.Style = $Window.FindResource('SplitMenuButtonStyle')
-    $button.Tag = $Action
-    $button.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
-    $button.HorizontalContentAlignment = [System.Windows.HorizontalAlignment]::Stretch
-    $button.VerticalContentAlignment = [System.Windows.VerticalAlignment]::Center
-    $grid = [System.Windows.Controls.Grid]::new()
-    $grid.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
-    $grid.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-    $grid.ColumnDefinitions.Add([System.Windows.Controls.ColumnDefinition]@{ Width = [System.Windows.GridLength]::new(20) })
-    $grid.ColumnDefinitions.Add([System.Windows.Controls.ColumnDefinition]@{ Width = [System.Windows.GridLength]::Auto })
-    $icon = [System.Windows.Shapes.Path]::new()
-    $icon.Data = [System.Windows.Media.Geometry]::Parse($IconData)
-    $icon.SetResourceReference([System.Windows.Shapes.Shape]::FillProperty, 'Theme.MenuItem.IconFill')
-    $icon.Width = 15; $icon.Height = 15
-    $icon.Stretch = [System.Windows.Media.Stretch]::Uniform
-    $icon.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
-    $icon.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-    [System.Windows.Controls.Grid]::SetColumn($icon, 0)
-    [void]$grid.Children.Add($icon)
-    $label = [System.Windows.Controls.TextBlock]::new()
-    $label.Text = $Text
-    if ($Action -eq 'PauseResume') { $script:GlobalPauseMenuLabel = $label }
-    $label.SetResourceReference([System.Windows.Controls.TextBlock]::ForegroundProperty, 'Theme.MenuItem.TextFill')
-    $label.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-    [System.Windows.Controls.Grid]::SetColumn($label, 1)
-    [void]$grid.Children.Add($label)
-    $button.Content = $grid
-    $button.Add_Click({
-            param($sender, $e)
-            $script:GlobalActionPopup.IsOpen = $false
-            Invoke-GlobalAction -Action ([string]$sender.Tag)
-            $e.Handled = $true
-        })
-    return $button
-}
 function Update-GlobalActionButton {
-    if (-not $GlobalActionButton -or -not $GlobalActionIcon -or -not $GlobalActionText) { return }
-    switch ($script:LastGlobalAction) {
-        'Reset' {
-            $label = 'Reset'; $tooltip = 'Reset all monitor statistics'; $iconData = $script:GlobalActionIcons.Reset
-        }
-        'PauseResume' {
-            $label = if ($script:GlobalPaused) { 'Resume' } else { 'Pause' }
-            $tooltip = if ($script:GlobalPaused) { 'Resume all monitors' } else { 'Pause all monitors' }
-            $iconData = if ($script:GlobalPaused) { $script:GlobalActionIcons.Resume } else { $script:GlobalActionIcons.Pause }
-        }
-        default {
-            $label = 'Clear'; $tooltip = 'Clear all monitors (F4)'; $iconData = $script:GlobalActionIcons.Clear
-        }
-    }
-    $GlobalActionText.Text = $label
-    $GlobalActionButton.ToolTip = $tooltip
-    $GlobalActionIcon.Data = [System.Windows.Media.Geometry]::Parse($iconData)
-    if ($script:GlobalPauseMenuLabel) { $script:GlobalPauseMenuLabel.Text = if ($script:GlobalPaused) { 'Resume' } else { 'Pause' } }
+    if (-not $GlobalPauseButton) { return }
+    $GlobalPauseText.Text = if ($script:GlobalPaused) { 'Resume' } else { 'Pause' }
+    $GlobalPauseButton.ToolTip = if ($script:GlobalPaused) { 'Resume all monitors (F6)' } else { 'Pause all monitors (F6)' }
+    $iconData = if ($script:GlobalPaused) { $script:GlobalActionIcons.Resume } else { $script:GlobalActionIcons.Pause }
+    $GlobalPauseIcon.Data = [System.Windows.Media.Geometry]::Parse($iconData)
 }
-function Show-GlobalActionMenu {
-    $script:GlobalActionSplitButtonBorder.UpdateLayout()
-    $targetWidth = [Math]::Max(88.0, [double]$script:GlobalActionSplitButtonBorder.ActualWidth)
-    $script:GlobalActionPopupBorder.MinWidth = $targetWidth
-    $script:GlobalActionPopup.IsOpen = $true
-}
-function Initialize-GlobalActionSplitButton {
-    $script:GlobalActionSplitButtonBorder = $Window.FindName('GlobalActionSplitButton')
-    $script:GlobalActionButton = $Window.FindName('GlobalActionButton')
-    $script:GlobalActionArrowButton = $Window.FindName('GlobalActionArrowButton')
-    $popup = [System.Windows.Controls.Primitives.Popup]::new()
-    $popup.AllowsTransparency = $true
-    $popup.StaysOpen = $false
-    $popup.PlacementTarget = $script:GlobalActionSplitButtonBorder
-    $popup.Placement = [System.Windows.Controls.Primitives.PlacementMode]::Bottom
-    $popup.VerticalOffset = 3
-    $outer = [System.Windows.Controls.Border]::new()
-    $outer.SetResourceReference([System.Windows.Controls.Border]::BackgroundProperty, 'Theme.Popup.Background')
-    $outer.SetResourceReference([System.Windows.Controls.Border]::BorderBrushProperty, 'Theme.Popup.Border')
-    $outer.BorderThickness = [System.Windows.Thickness]::new(1)
-    $outer.CornerRadius = [System.Windows.CornerRadius]::new(7)
-    $outer.Padding = [System.Windows.Thickness]::new(3)
-    $shadow = [System.Windows.Media.Effects.DropShadowEffect]::new()
-    $shadow.BlurRadius = 12; $shadow.ShadowDepth = 2; $shadow.Opacity = 0.12
-    $outer.Effect = $shadow
-    $panel = [System.Windows.Controls.StackPanel]::new()
-    $resetItem = New-GlobalActionMenuItem -Action 'Reset' -Text 'Reset' -IconData $script:GlobalActionIcons.Reset
-    $pauseItem = New-GlobalActionMenuItem -Action 'PauseResume' -Text 'Pause' -IconData $script:GlobalActionIcons.Pause
-    $clearItem = New-GlobalActionMenuItem -Action 'Clear' -Text 'Clear' -IconData $script:GlobalActionIcons.Clear
-    $panel.Children.Add($resetItem) | Out-Null
-    $panel.Children.Add($pauseItem) | Out-Null
-    $panel.Children.Add($clearItem) | Out-Null
-    $outer.Child = $panel
-    $popup.Child = $outer
-    $popup.Tag = $pauseItem
-    $script:GlobalActionPopup = $popup
-    $script:GlobalActionPopupBorder = $outer
-    $script:GlobalActionArrowButton.Add_Click({
-            if ($script:GlobalActionPopup.IsOpen) { $script:GlobalActionPopup.IsOpen = $false }
-            else { Show-GlobalActionMenu }
-        })
-    $script:GlobalActionButton.Add_Click({ $script:GlobalActionPopup.IsOpen = $false; Invoke-GlobalAction -Action $script:LastGlobalAction })
+function Initialize-ToolbarActions {
+    $GlobalPauseButton.Add_Click({ Invoke-GlobalAction -Action 'PauseResume' })
+    $GlobalResetButton.Add_Click({ Invoke-GlobalAction -Action 'Reset' })
+    $GlobalClearButton.Add_Click({ Invoke-GlobalAction -Action 'Clear' })
+    $OptionsArrowButton.Add_Click({ $OptionsPopup.IsOpen = -not $OptionsPopup.IsOpen })
+    $OptionsPopup.Add_PreviewKeyDown({
+        param($sender, $e)
+        if ($e.Key -eq [System.Windows.Input.Key]::Escape) {
+            $OptionsPopup.IsOpen = $false
+            [void]$OptionsArrowButton.Focus()
+            $e.Handled = $true
+        }
+    })
     Update-GlobalActionButton
 }
 #endregion
@@ -2756,7 +2672,7 @@ function Read-Configuration {
         return $null
     }
 }
-function Apply-Configuration {
+function Update-Configuration {
     param([Parameter(Mandatory)]$ConfigData)
     $clamp = { param($value, $min, $max, $fallback) if ($null -ne $value) { [Math]::Max($min, [Math]::Min($max, [int]$value)) } else { $fallback } }
     $newInterval = & $clamp $ConfigData.Interval 0 3600 ([int]$script:Settings.Interval)
@@ -2778,7 +2694,7 @@ function Apply-Configuration {
 }
 function Load-Configuration {
     $config = Read-Configuration
-    if ($config) { Apply-Configuration -ConfigData $config; $script:LoadedConfiguration = $config }
+    if ($config) { Update-Configuration -ConfigData $config; $script:LoadedConfiguration = $config }
     elseif (Test-Path -LiteralPath $script:ConfigPath -PathType Leaf) { Show-MessageBox -Message "The configuration could not be loaded." -Title 'Configuration error' -Icon Error }
 }
 #endregion
@@ -2800,7 +2716,6 @@ $script:CardElementVisibility = [ordered]@{
 }
 $script:GlobalPaused = $false
 $script:LastGlobalAction = 'Clear'
-$script:GlobalActionPopup = $null
 $script:ToolbarLabelsVisible = $null
 $script:Settings = New-DefaultSettings -Interval $Interval -Timeout $Timeout -BufferSize $BufferSize -HistoryDepth $HistoryDepth
 $script:Monitors = @{}
@@ -2832,14 +2747,17 @@ $StatusText = $Window.FindName('StatusText')
 $LoadButton = $Window.FindName('LoadButton')
 $SaveButton = $Window.FindName('SaveButton')
 $OptionsButton = $Window.FindName('OptionsButton')
+$GlobalPauseButton = $Window.FindName('GlobalPauseButton')
+$GlobalPauseIcon = $Window.FindName('GlobalPauseIcon')
+$GlobalPauseText = $Window.FindName('GlobalPauseText')
+$GlobalResetButton = $Window.FindName('GlobalResetButton')
+$GlobalClearButton = $Window.FindName('GlobalClearButton')
+$OptionsArrowButton = $Window.FindName('OptionsArrowButton')
+$OptionsPopup = $Window.FindName('OptionsPopup')
 $ToolbarPanel = $Window.FindName('ToolbarPanel')
 $HostInputPanel = $Window.FindName('HostInputPanel')
 $StatusBar = $Window.FindName('StatusBar')
 $ModeToggleButton = $Window.FindName('ModeToggleButton')
-$GlobalActionButton = $Window.FindName('GlobalActionButton')
-$GlobalActionArrowButton = $Window.FindName('GlobalActionArrowButton')
-$GlobalActionIcon = $Window.FindName('GlobalActionIcon')
-$GlobalActionText = $Window.FindName('GlobalActionText')
 $TitleCloseButton = $Window.FindName('TitleCloseButton')
 $TitleMinimizeButton = $Window.FindName('TitleMinimizeButton')
 $TitleMaximizeButton = $Window.FindName('TitleMaximizeButton')
@@ -2850,6 +2768,7 @@ $importMenu = [System.Windows.Controls.ContextMenu]::new()
 $importMenu.Style = $Window.FindResource('ThemedContextMenuStyle')
 $importItem = [System.Windows.Controls.MenuItem]::new()
 $importItem.Header = 'Import'
+$importItem.Icon = New-TransferMenuIcon
 $importItem.Style = $Window.FindResource('ThemedContextMenuItemStyle')
 $importItem.Add_Click({ Import-MonitorHosts })
 [void]$importMenu.Items.Add($importItem)
@@ -2879,17 +2798,18 @@ $AddButton.Add_Click({
             $HostInputPanel.Visibility = 'Collapsed'
         }
     })
-$LoadButton.Add_Click({ Load-Configuration })
+$LoadButton.Add_Click({ $OptionsPopup.IsOpen = $false; Load-Configuration })
 $SaveButton.Add_Click({
+        $OptionsPopup.IsOpen = $false
         try { Save-Configuration }
         catch { Show-MessageBox -Message "The configuration could not be saved.`n`n$($_.Exception.Message)" -Title 'Save error' -Icon Error }
     })
-$OptionsButton.Add_Click({ Show-OptionsWindow })
+$OptionsButton.Add_Click({ $OptionsPopup.IsOpen = $false; Show-OptionsWindow })
 $ViewToggleButton.Add_Click({
         $nextMode = if ($script:ViewMode -eq 'Card') { 'Table' } else { 'Card' }
         Set-ViewMode -Mode $nextMode
     })
-Initialize-GlobalActionSplitButton
+Initialize-ToolbarActions
 Register-DropTarget -Element $MonitorPanel
 Register-DropTarget -Element $MonitorScroll
 $TitleCloseButton.Add_Click({ $Window.Close() })
@@ -2942,6 +2862,14 @@ $Window.Add_KeyDown({
             Invoke-GlobalAction -Action 'Clear'
             $e.Handled = $true
         }
+        elseif ($e.Key -eq [System.Windows.Input.Key]::F5) {
+            Invoke-GlobalAction -Action 'Reset'
+            $e.Handled = $true
+        }
+        elseif ($e.Key -eq [System.Windows.Input.Key]::F6) {
+            Invoke-GlobalAction -Action 'PauseResume'
+            $e.Handled = $true
+        }
         elseif ($e.Key -eq [System.Windows.Input.Key]::OemComma -and $ctrl) {
             Show-OptionsWindow
             $e.Handled = $true
@@ -2992,12 +2920,11 @@ $Window.Add_SizeChanged({
     $script:ToolbarLabelsVisible = $showLabels
     $visibility = if ($showLabels) { 'Visible' } else { 'Collapsed' }
 
-    foreach ($btn in $LoadButton, $SaveButton, $OptionsButton, $ViewToggleButton) {
+    foreach ($btn in $GlobalPauseButton, $GlobalResetButton, $GlobalClearButton, $OptionsButton, $ViewToggleButton) {
         if ($btn.Content -is [System.Windows.Controls.StackPanel] -and $btn.Content.Children.Count -gt 1) {
             $btn.Content.Children[1].Visibility = $visibility
         }
     }
-    if ($GlobalActionText) { $GlobalActionText.Visibility = $visibility }
 
     $captionWidth = if ($showLabels) { 46 } else { 32 }
     foreach ($button in $TitleMinimizeButton, $TitleMaximizeButton, $TitleCloseButton) {
@@ -3030,7 +2957,7 @@ $Window.Add_Closing({
     })
 Register-SystemThemeWatcher
 if ($script:LoadedConfiguration -and -not $IgnoreConfiguration) { 
-    Apply-Configuration -ConfigData $script:LoadedConfiguration 
+    Update-Configuration -ConfigData $script:LoadedConfiguration 
 }
 $Window.UpdateLayout()
 $updateTimer.Start()
