@@ -2110,6 +2110,10 @@ function Sync-MonitorHistoryDisplay {
 }
 function Update-MonitorRow {
     param([Parameter(Mandatory)]$Monitor, [Parameter(Mandatory)][hashtable]$Result)
+    # PingMonitor reject stale row result
+    if ($Monitor.IsStopping -or $Result.Timestamp -isnot [DateTime]) { return }
+    if ($Result.Timestamp.ToUniversalTime() -lt $Monitor.StatsResetUtc) { return }
+
     $status = [string]$Result.Status
     $Monitor.DisplayIp = if ($null -ne $Result.Address) { [string]$Result.Address } else { '' }
     $Monitor.DisplayLatency = if ($status -eq 'Success') { '{0} ms' -f [long]$Result.RttMs } else { $status -replace '(?-i)(?!^)([A-Z])', ' $1' }
@@ -2351,7 +2355,7 @@ function Register-CardDragSource {
 #endregion
 #region 25.ViewModel.TableView
 
-$script:TableColumnVisibility = [ordered]@{ Status = $true; Host = $true; IP = $true; Latency = $true; Avg = $true; Min = $true; Max = $true; Drop = $true; History = $true }
+$script:TableColumnVisibility = [ordered]@{ Status = $true; IP = $true; Latency = $true; Avg = $true; Min = $true; Max = $true; Drop = $true; History = $true }
 # Sorting is a one-time snapshot on header clicks, never a live collection sort.
 function Reset-TableSortIndicator {
     if (-not $TableGrid) { return }
@@ -2389,14 +2393,16 @@ function Get-TableSortValue {
             return [double]::MaxValue
         }
         'Avg' {
-            $sum = 0.0; $count = 0
+            $sum = 0.0; $count = 0; $hasInvalid = $false
             foreach ($sample in $Monitor.History) {
                 if ($sample.Status -eq 'Success') {
                     $number = ConvertTo-TableSortNumber $sample.RttMs
-                    if ($number -ge 0 -and $number -lt [double]::MaxValue) { $sum += $number; $count++ }
+                    if ($number -eq [double]::MaxValue) { $hasInvalid = $true }
+                    elseif ($number -ge 0) { $sum += $number; $count++ }
                 }
             }
             if ($count) { return (ConvertTo-TableSortNumber ([Math]::Round($sum / $count))) }
+            if ($hasInvalid) { return [double]::MaxValue }
             return -1.0
         }
         'Min' { return (ConvertTo-TableSortNumber $Monitor.LifetimeMin) }
@@ -2407,6 +2413,7 @@ function Get-TableSortValue {
             if (-not $Monitor.LastResult) { return -1 }
             if ($Monitor.LastResult.Status -ne 'Success') { return 3 }
             $rtt = ConvertTo-TableSortNumber $Monitor.LastResult.RttMs
+            if ($rtt -eq [double]::MaxValue) { return [double]::MaxValue }
             if ($rtt -lt 0) { return -1 }
             if ($rtt -gt $script:RttSettings.CriticalMs) { return 2 }
             if ($rtt -gt $script:RttSettings.WarningMs) { return 1 }
@@ -2556,6 +2563,14 @@ function Show-RowActionMenu {
 }
 function Invoke-ColumnVisibilityMenuItemClick {
     param($Sender)
+    # PingMonitor protect Host visibility
+    if ([string]$Sender.Tag -in @('Host', 'HostName')) {
+        foreach ($hostColumn in $TableGrid.Columns) {
+            if ([string]$hostColumn.SortMemberPath -in @('Host', 'HostName')) { $hostColumn.Visibility = 'Visible' }
+        }
+        return
+    }
+
     $name = [string]$Sender.Tag
     $script:TableColumnVisibility[$name] = [bool]$Sender.IsChecked
     $column = $TableGrid.Columns | Where-Object { [string]$_.SortMemberPath -eq $name } | Select-Object -First 1
@@ -2563,6 +2578,11 @@ function Invoke-ColumnVisibilityMenuItemClick {
 }
 function Show-ColumnVisibilityMenu {
     param([Parameter(Mandatory)][System.Windows.FrameworkElement]$PlacementTarget)
+    # PingMonitor enforce Host visibility
+    foreach ($hostColumn in $TableGrid.Columns) {
+        if ([string]$hostColumn.SortMemberPath -in @('Host', 'HostName')) { $hostColumn.Visibility = 'Visible' }
+    }
+
     $menu = [System.Windows.Controls.ContextMenu]::new()
     
     $menu.Style = $Window.FindResource('ThemedContextMenuStyle')
@@ -2571,6 +2591,8 @@ function Show-ColumnVisibilityMenu {
     $menu.Placement = [System.Windows.Controls.Primitives.PlacementMode]::MousePoint
     
     foreach ($name in $script:TableColumnVisibility.Keys) {
+        # PingMonitor permanent Host menu
+        if ($name -in @('Host', 'HostName')) { continue }
         $item = [System.Windows.Controls.MenuItem]::new()
         $item.Header = $name
         $item.Tag = $name
@@ -2762,6 +2784,8 @@ function Add-Monitor {
     $LogoViewBox.Visibility = if ($script:Monitors.Count) { 'Collapsed' } else { 'Visible' }
     [void]$MonitorPanel.Children.Add($controls.Card)
     [void]$TableGrid.Items.Add($monitor)
+    # PingMonitor clear sort on add
+    Reset-TableSortIndicator
     if ($monitor.Paused) {
         $controls.PauseButton.Content = [char]0x25B6
         $controls.PauseButton.ToolTip = 'Resume monitoring'
@@ -3144,6 +3168,9 @@ function Read-Configuration {
 }
 function Update-Configuration {
     param([Parameter(Mandatory)]$ConfigData)
+    # PingMonitor clear sort on configuration load
+    Reset-TableSortIndicator
+
     $clamp = { param($value, $min, $max, $fallback) if ($null -ne $value) { [Math]::Max($min, [Math]::Min($max, [int]$value)) } else { $fallback } }
     $newInterval = & $clamp $ConfigData.Interval 0 3600 ([int]$script:Settings.Interval)
     $newBuffer = & $clamp $ConfigData.BufferSize 0 65500 ([int]$script:Settings.BufferSize)
