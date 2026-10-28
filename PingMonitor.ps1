@@ -999,13 +999,13 @@ $script:MainWindowXaml = [xml]@'
             BorderBrush="{DynamicResource Theme.Divider}" BorderThickness="0,0,0,1">
             <DockPanel>
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                    <Button x:Name="ModeToggleButton" Content="" ToolTip="Compact mode (F9)"
+                    <Button x:Name="ModeToggleButton" Content="&#xE70E;" ToolTip="Compact mode (F9)"
                         Style="{DynamicResource CaptionButtonStyle}" Height="28" Width="28" />
-                    <Button x:Name="TitleMinimizeButton" Content="" ToolTip="Minimize"
+                    <Button x:Name="TitleMinimizeButton" Content="&#xE921;" ToolTip="Minimize"
                         Style="{DynamicResource CaptionButtonStyle}" />
-                    <Button x:Name="TitleMaximizeButton" Content="" ToolTip="Maximize"
+                    <Button x:Name="TitleMaximizeButton" Content="&#xE922;" ToolTip="Maximize"
                         Style="{DynamicResource CaptionButtonStyle}" />
-                    <Button x:Name="TitleCloseButton" Content="" ToolTip="Close"
+                    <Button x:Name="TitleCloseButton" Content="&#xE8BB;" ToolTip="Close"
                         Style="{DynamicResource CaptionCloseButtonStyle}" />
                 </StackPanel>
                 <Viewbox x:Name="TitleLogoBox" Width="16" Height="16" Margin="10,0,8,0"
