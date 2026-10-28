@@ -904,6 +904,15 @@ $script:AppLogoXaml = [xml]@'
     <Ellipse Canvas.Left="34.5" Canvas.Top="18.8" Width="10.5" Height="10.5" Fill="{DynamicResource Theme.Brand.StatusDot}" Stroke="{DynamicResource Theme.Accent}"/>
 </Canvas>
 '@
+function New-TransferMenuIcon {
+    param([switch]$Export)
+    $path = [System.Windows.Shapes.Path]::new()
+    $data = if ($Export) { 'M4,18H20V21H4Z M10,16V8H6L12,2 18,8H14V16Z' } else { 'M4,18H20V21H4Z M10,2H14V10H18L12,16 6,10H10Z' }
+    $path.Data = [System.Windows.Media.Geometry]::Parse($data)
+    $path.Width = 14; $path.Height = 14; $path.Stretch = 'Uniform'
+    $path.SetResourceReference([System.Windows.Shapes.Shape]::FillProperty, 'Theme.MenuItem.IconFill')
+    return $path
+}
 function New-AppLogoVisual {
     Read-XamlWindow -Xaml $script:AppLogoXaml -ResourceDict $script:AppResources
 }
@@ -973,232 +982,612 @@ function Show-MessageBox {
 
 $script:MainWindowXaml = [xml]@'
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Name="RootWindow" Title="PingMonitor" Width="532" Height="500" MinWidth="258" MinHeight="320" WindowStartupLocation="CenterScreen" WindowStyle="None" Background="{DynamicResource Theme.Window.Background}" FontFamily="Segoe UI" FontSize="13" SnapsToDevicePixels="True">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Name="RootWindow" Title="PingMonitor"
+    Width="532" Height="500" MinWidth="258" MinHeight="320" WindowStartupLocation="CenterScreen"
+    WindowStyle="None" Background="{DynamicResource Theme.Window.Background}" FontFamily="Segoe UI"
+    FontSize="13" SnapsToDevicePixels="True">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="32"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="32" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
-        <Border x:Name="TitleBar" Grid.Row="0" Height="32" Background="{DynamicResource Theme.Toolbar.Background}" BorderBrush="{DynamicResource Theme.Divider}" BorderThickness="0,0,0,1">
+        <Border x:Name="TitleBar" Grid.Row="0" Height="32"
+            Background="{DynamicResource Theme.Toolbar.Background}"
+            BorderBrush="{DynamicResource Theme.Divider}" BorderThickness="0,0,0,1">
             <DockPanel>
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                    <Button x:Name="ModeToggleButton" Content="&#xE70E;" ToolTip="Compact mode (F9)" Style="{DynamicResource CaptionButtonStyle}" Height="28" Width="28"/>
-                    <Button x:Name="TitleMinimizeButton" Content="&#xE921;" ToolTip="Minimize" Style="{DynamicResource CaptionButtonStyle}"/>
-                    <Button x:Name="TitleMaximizeButton" Content="&#xE922;" ToolTip="Maximize" Style="{DynamicResource CaptionButtonStyle}"/>
-                    <Button x:Name="TitleCloseButton" Content="&#xE8BB;" ToolTip="Close" Style="{DynamicResource CaptionCloseButtonStyle}"/>
+                    <Button x:Name="ModeToggleButton" Content="" ToolTip="Compact mode (F9)"
+                        Style="{DynamicResource CaptionButtonStyle}" Height="28" Width="28" />
+                    <Button x:Name="TitleMinimizeButton" Content="" ToolTip="Minimize"
+                        Style="{DynamicResource CaptionButtonStyle}" />
+                    <Button x:Name="TitleMaximizeButton" Content="" ToolTip="Maximize"
+                        Style="{DynamicResource CaptionButtonStyle}" />
+                    <Button x:Name="TitleCloseButton" Content="" ToolTip="Close"
+                        Style="{DynamicResource CaptionCloseButtonStyle}" />
                 </StackPanel>
-                <Viewbox x:Name="TitleLogoBox" Width="16" Height="16" Margin="10,0,8,0" VerticalAlignment="Center" IsHitTestVisible="False"/>
-                <TextBlock Text="PingMonitor" VerticalAlignment="Center" FontSize="12" Foreground="{DynamicResource Theme.Caption.Foreground}"/>
+                <Viewbox x:Name="TitleLogoBox" Width="16" Height="16" Margin="10,0,8,0"
+                    VerticalAlignment="Center" IsHitTestVisible="False" />
+                <TextBlock Text="PingMonitor" VerticalAlignment="Center" FontSize="12"
+                    Foreground="{DynamicResource Theme.Caption.Foreground}" />
             </DockPanel>
         </Border>
-        <Border x:Name="ToolbarPanel" Grid.Row="1" Background="{DynamicResource Theme.Toolbar.Background}" BorderBrush="{DynamicResource Theme.Divider}" BorderThickness="0,0,0,1" Padding="1,8">
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource Theme.Accent}" VerticalAlignment="Center" Margin="13,0,8,0"/>
-                    <Button x:Name="LoadButton" Style="{DynamicResource PrimaryButtonStyle}" ToolTip="Load configuration (F2)">
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                            <Path Data="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" Width="16" Height="16" Stretch="Uniform" SnapsToDevicePixels="True"/>
-                            <TextBlock Text="Load" VerticalAlignment="Center" Margin="6,0,0,0"/>
-                        </StackPanel>
-                    </Button>
-                    <Button x:Name="SaveButton" Style="{DynamicResource PrimaryButtonStyle}" ToolTip="Save configuration (F3 / Ctrl+S)">
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                            <Path Data="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z" Width="16" Height="16" Stretch="Uniform" SnapsToDevicePixels="True"/>
-                            <TextBlock Text="Save" VerticalAlignment="Center" Margin="6,0,0,0"/>
-                        </StackPanel>
-                    </Button>
-                    <Rectangle Style="{DynamicResource ToolbarSeparatorStyle}"/>
-                    <Border x:Name="GlobalActionSplitButton" Height="32" Margin="0,0,4,0" BorderThickness="1" CornerRadius="4" SnapsToDevicePixels="True">
-                        <Border.Style>
-                            <Style TargetType="Border">
-                                <Setter Property="Background" Value="Transparent"/>
-                                <Setter Property="BorderBrush" Value="{DynamicResource Theme.Border}"/>
-                                <Style.Triggers>
-                                    <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter Property="Background" Value="{DynamicResource Theme.Hover.Background}"/>
-                                        <Setter Property="BorderBrush" Value="{DynamicResource Theme.Accent}"/>
-                                    </Trigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Border.Style>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="1"/>
-                                <ColumnDefinition Width="12"/>
-                            </Grid.ColumnDefinitions>
-                            <Button x:Name="GlobalActionButton" Grid.Column="0" Style="{DynamicResource SplitButtonPartStyle}" Padding="10,6">
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                    <Path x:Name="GlobalActionIcon" Width="14" Height="14" Stretch="Uniform" Margin="6,0,0,0" SnapsToDevicePixels="True"/>
-                                    <TextBlock x:Name="GlobalActionText" Text="Clear" VerticalAlignment="Center" Margin="4,0,4,0"/>
+        <Border x:Name="ToolbarPanel" Grid.Row="1"
+            Background="{DynamicResource Theme.Toolbar.Background}"
+            BorderBrush="{DynamicResource Theme.Divider}" BorderThickness="0,0,0,1" Padding="6,8">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <Button x:Name="GlobalPauseButton" Style="{DynamicResource PrimaryButtonStyle}"
+                    ToolTip="Pause all monitors (F6)">
+                    <StackPanel Orientation="Horizontal">
+                        <Path x:Name="GlobalPauseIcon"
+                            Data="M5,4 L10,4 L10,20 L5,20 Z M14,4 L19,4 L19,20 L14,20 Z" Width="16"
+                            Height="16" Stretch="Uniform" />
+                        <TextBlock x:Name="GlobalPauseText" Text="Pause" VerticalAlignment="Center"
+                            Margin="6,0,0,0" />
+                    </StackPanel>
+                </Button>
+                <Button x:Name="GlobalResetButton" Style="{DynamicResource PrimaryButtonStyle}"
+                    ToolTip="Reset all monitor statistics (F5)">
+                    <StackPanel Orientation="Horizontal">
+                        <Path x:Name="GlobalResetIcon"
+                            Data="M960,0V213.333C1371.627,213.333 1706.667,548.267 1706.667,960S1371.627,1706.667 960,1706.667S213.333,1371.733 213.333,960C213.333,762.987 291.733,577.493 426.667,439.253V693.333H640V106.667H53.333V320H244.373C88.64,494.08 0,720.96 0,960C0,1489.28 430.613,1920 960,1920S1920,1489.28 1920,960S1489.387,0 960,0Z"
+                            Width="16" Height="16" Stretch="Uniform" />
+                        <TextBlock x:Name="GlobalResetText" Text="Reset" VerticalAlignment="Center"
+                            Margin="6,0,0,0" />
+                    </StackPanel>
+                </Button>
+                <Button x:Name="GlobalClearButton" Style="{DynamicResource PrimaryButtonStyle}"
+                    ToolTip="Clear all monitors (F4)">
+                    <StackPanel Orientation="Horizontal">
+                        <Path x:Name="GlobalClearIcon"
+                            Data="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
+                            Width="16" Height="16" Stretch="Uniform" />
+                        <TextBlock x:Name="GlobalClearText" Text="Clear" VerticalAlignment="Center"
+                            Margin="6,0,0,0" />
+                    </StackPanel>
+                </Button>
+                <Rectangle Style="{DynamicResource ToolbarSeparatorStyle}" />
+                <Button x:Name="ViewToggleButton" Style="{DynamicResource PrimaryButtonStyle}"
+                    ToolTip="Switch to table view (F8)">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <Path x:Name="ViewToggleIcon" Width="16" Height="16" Stretch="Uniform"
+                            Data="M3,3H21V21H3V3M5,5V8H19V5H5M5,10V14H19V10H5M5,16V19H19V16H5Z"
+                            SnapsToDevicePixels="True" />
+                        <TextBlock x:Name="ViewToggleText" Text="Table" VerticalAlignment="Center"
+                            Margin="6,0,0,0" />
+                    </StackPanel>
+                </Button>
+                <Rectangle Style="{DynamicResource ToolbarSeparatorStyle}" />
+                <Border x:Name="OptionsSplitButton" Height="32" Margin="0,0,4,0" BorderThickness="1"
+                    BorderBrush="{DynamicResource Theme.Border}" CornerRadius="4">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="1" />
+                            <ColumnDefinition Width="17" />
+                        </Grid.ColumnDefinitions>
+                        <Button x:Name="OptionsButton" MinWidth="36"
+                            Style="{DynamicResource SplitButtonPartStyle}"
+                            ToolTip="Monitoring options (Ctrl+,)">
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center"
+                                Margin="10,0">
+                                <Path
+                                    Data="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"
+                                    Width="16" Height="16" Stretch="Uniform"
+                                    SnapsToDevicePixels="True" />
+                                <TextBlock Text="Options" VerticalAlignment="Center"
+                                    Margin="6,0,0,0" />
+                            </StackPanel>
+                        </Button>
+                        <Border Grid.Column="1" Height="18"
+                            Background="{DynamicResource Theme.Border}" />
+                        <Button x:Name="OptionsArrowButton" Grid.Column="2"
+                            Style="{DynamicResource SplitButtonPartStyle}"
+                            ToolTip="Save (F3 / Ctrl+S) or load (F2) configuration">
+                            <Path Width="6" Height="5" Stretch="Fill" Data="M0,0 L8,0 L4,5 Z" />
+                        </Button>
+                        <Popup x:Name="OptionsPopup"
+                            PlacementTarget="{Binding ElementName=OptionsSplitButton}"
+                            Placement="Bottom" VerticalOffset="3" AllowsTransparency="True"
+                            StaysOpen="False">
+                            <Border Background="{DynamicResource Theme.Popup.Background}"
+                                BorderBrush="{DynamicResource Theme.Popup.Border}"
+                                BorderThickness="1" CornerRadius="7" Padding="3" MinWidth="100">
+                                <StackPanel>
+                                    <Button x:Name="SaveButton"
+                                        Style="{DynamicResource SplitMenuButtonStyle}"
+                                        ToolTip="Save configuration (F3 / Ctrl+S)">
+                                        <StackPanel Orientation="Horizontal"
+                                            HorizontalAlignment="Left">
+                                            <Path
+                                                Data="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"
+                                                Width="16" Height="16" Stretch="Uniform"
+                                                SnapsToDevicePixels="True" />
+                                            <TextBlock Text="Save" VerticalAlignment="Center"
+                                                Margin="6,0,0,0" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button x:Name="LoadButton"
+                                        Style="{DynamicResource SplitMenuButtonStyle}"
+                                        ToolTip="Load configuration (F2)">
+                                        <StackPanel Orientation="Horizontal"
+                                            HorizontalAlignment="Left">
+                                            <Path Data="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"
+                                                Width="16" Height="16" Stretch="Uniform"
+                                                SnapsToDevicePixels="True" />
+                                            <TextBlock Text="Load" VerticalAlignment="Center"
+                                                Margin="6,0,0,0" />
+                                        </StackPanel>
+                                    </Button>
                                 </StackPanel>
-                            </Button>
-                            <Border Grid.Column="1" Width="1" Height="18" VerticalAlignment="Center" Background="{DynamicResource Theme.Border}"/>
-                            <Button x:Name="GlobalActionArrowButton" Grid.Column="2" Style="{DynamicResource SplitButtonPartStyle}" Padding="0" ToolTip="More actions">
-                                <Path Width="6" Height="5" Stretch="Fill" Margin="0,2,3,0" Data="M0,0 L8,0 L4,5 Z"/>
-                            </Button>
-                        </Grid>
-                    </Border>
-                    <Button x:Name="ViewToggleButton" Style="{DynamicResource PrimaryButtonStyle}" ToolTip="Switch to table view">
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                            <Path x:Name="ViewToggleIcon" Width="16" Height="16" Stretch="Uniform" Data="M3,3H21V21H3V3M5,5V8H19V5H5M5,10V14H19V10H5M5,16V19H19V16H5Z" SnapsToDevicePixels="True"/>
-                            <TextBlock x:Name="ViewToggleText" Text="Table" VerticalAlignment="Center" Margin="6,0,0,0"/>
-                        </StackPanel>
-                    </Button>
-                    <Button x:Name="OptionsButton" Style="{DynamicResource PrimaryButtonStyle}" ToolTip="Monitoring options (Ctrl+,)">
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                            <Path Data="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" Width="16" Height="16" Stretch="Uniform" SnapsToDevicePixels="True"/>
-                            <TextBlock Text="Options" VerticalAlignment="Center" Margin="6,0,0,0"/>
-                        </StackPanel>
-                    </Button>
-                </StackPanel>
-            </Border>
-        <Border x:Name="HostInputPanel" Grid.Row="2" Margin="6,3,6,2" Background="{DynamicResource Theme.Card.Background}" BorderBrush="{DynamicResource Theme.Border}" BorderThickness="1" CornerRadius="7" Padding="4">
+                            </Border>
+                        </Popup>
+                    </Grid>
+                </Border>
+            </StackPanel>
+        </Border>
+        <Border x:Name="HostInputPanel" Grid.Row="2" Margin="6,3,6,2"
+            Background="{DynamicResource Theme.Card.Background}"
+            BorderBrush="{DynamicResource Theme.Border}" BorderThickness="1" CornerRadius="7"
+            Padding="4">
             <Grid>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <Grid>
-                    <TextBox x:Name="HostInput" Height="32" Padding="6,6" BorderThickness="0" Background="Transparent" Foreground="{DynamicResource Theme.Text.Primary}" VerticalContentAlignment="Center" FontSize="14" MaxLength="253"/>
-                    <TextBlock x:Name="InputHint" Text="Hostname or IP address" Foreground="{DynamicResource Theme.Text.Muted}" Margin="7,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"/>
+                    <TextBox x:Name="HostInput" Height="32" Padding="6,6" BorderThickness="0"
+                        Background="Transparent" Foreground="{DynamicResource Theme.Text.Primary}"
+                        VerticalContentAlignment="Center" FontSize="14" MaxLength="253" />
+                    <TextBlock x:Name="InputHint" Text="Hostname or IP address"
+                        Foreground="{DynamicResource Theme.Text.Muted}" Margin="7,0,0,0"
+                        VerticalAlignment="Center" IsHitTestVisible="False" />
                 </Grid>
-                <Button x:Name="AddButton" Grid.Column="1" Content="Add monitor" MinWidth="80" Padding="10,1" IsDefault="True" Style="{DynamicResource ActionButtonStyle}"/>
+                <Button x:Name="AddButton" Grid.Column="1" Content="Add monitor" MinWidth="80"
+                    Padding="10,1" IsDefault="True" Style="{DynamicResource ActionButtonStyle}" />
             </Grid>
         </Border>
         <Grid x:Name="ContentGrid" Grid.Row="3" Background="Transparent">
-            <Viewbox Name="LogoViewBox" Stretch="Uniform" VerticalAlignment="Center" HorizontalAlignment="Center" Opacity="0.15" IsHitTestVisible="False"/>
+            <Viewbox Name="LogoViewBox" Stretch="Uniform" VerticalAlignment="Center"
+                HorizontalAlignment="Center" Opacity="0.15" IsHitTestVisible="False" />
             <Grid x:Name="CardViewContainer">
-                <ScrollViewer x:Name="MonitorScroll" Margin="2" VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Disabled">
-                    <WrapPanel x:Name="MonitorPanel" HorizontalAlignment="Left" Background="Transparent" AllowDrop="True"/>
+                <ScrollViewer x:Name="MonitorScroll" Margin="2"
+                    VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Disabled">
+                    <WrapPanel x:Name="MonitorPanel" HorizontalAlignment="Left"
+                        Background="Transparent" AllowDrop="True" />
                 </ScrollViewer>
-                <Canvas x:Name="DropIndicatorOverlay" Background="Transparent" IsHitTestVisible="False"/>
+                <Canvas x:Name="DropIndicatorOverlay" Background="Transparent"
+                    IsHitTestVisible="False" />
             </Grid>
             <Grid x:Name="TableViewContainer" Visibility="Collapsed" Background="Transparent">
                 <DataGrid x:Name="TableGrid" AutoGenerateColumns="False" IsReadOnly="True"
                     CanUserAddRows="False" CanUserDeleteRows="False" CanUserReorderColumns="True"
-                    CanUserResizeColumns="True" CanUserSortColumns="False" HeadersVisibility="Column"
+                    CanUserResizeColumns="True" CanUserSortColumns="True" HeadersVisibility="Column"
                     RowHeaderWidth="0" GridLinesVisibility="None" SelectionMode="Single"
-                    SelectionUnit="FullRow" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
-                    EnableRowVirtualization="True" EnableColumnVirtualization="True"
-                    VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
-                    ScrollViewer.CanContentScroll="True"
-                    Background="Transparent" Foreground="{DynamicResource Theme.Text.Primary}"
-                    BorderThickness="0" RowHeight="32" ColumnHeaderHeight="32" AllowDrop="True"
+                    SelectionUnit="FullRow" HorizontalScrollBarVisibility="Auto"
+                    VerticalScrollBarVisibility="Auto" EnableRowVirtualization="True"
+                    EnableColumnVirtualization="True" VirtualizingPanel.IsVirtualizing="True"
+                    VirtualizingPanel.VirtualizationMode="Recycling"
+                    ScrollViewer.CanContentScroll="True" Background="Transparent"
+                    Foreground="{DynamicResource Theme.Text.Primary}" BorderThickness="0"
+                    RowHeight="32" ColumnHeaderHeight="32" AllowDrop="True"
                     SnapsToDevicePixels="True" UseLayoutRounding="True">
                     <DataGrid.Resources>
                         <Style TargetType="DataGridColumnHeader">
-                            <Setter Property="Background" Value="{DynamicResource Theme.Toolbar.Background}"/>
-                            <Setter Property="Foreground" Value="{DynamicResource Theme.Text.Muted}"/>
-                            <Setter Property="BorderBrush" Value="{DynamicResource Theme.Divider}"/>
-                            <Setter Property="BorderThickness" Value="0,0,0,1"/>
-                            <Setter Property="Padding" Value="10,6"/>
-                            <Setter Property="HorizontalContentAlignment" Value="Center"/>
-                            <Setter Property="FontSize" Value="11"/>
-                            <Setter Property="FontWeight" Value="SemiBold"/>
+                            <Setter Property="Background"
+                                Value="{DynamicResource Theme.Toolbar.Background}" />
+                            <Setter Property="Foreground" Value="{DynamicResource Theme.Text.Muted}" />
+                            <Setter Property="BorderBrush" Value="{DynamicResource Theme.Divider}" />
+                            <Setter Property="BorderThickness" Value="0,0,0,1" />
+                            <Setter Property="Padding" Value="10,6" />
+                            <Setter Property="HorizontalContentAlignment" Value="Center" />
+                            <Setter Property="FontSize" Value="11" />
+                            <Setter Property="FontWeight" Value="SemiBold" />
+                            <Style.Triggers>
+                                <DataTrigger
+                                    Binding="{Binding Column.CanUserSort, RelativeSource={RelativeSource Self}}"
+                                    Value="True">
+                                    <Setter Property="ToolTip" Value="Sort ↑" />
+                                </DataTrigger>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition
+                                            Binding="{Binding Column.CanUserSort, RelativeSource={RelativeSource Self}}"
+                                            Value="True" />
+                                        <Condition
+                                            Binding="{Binding Column.SortDirection, RelativeSource={RelativeSource Self}}"
+                                            Value="Ascending" />
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="ToolTip" Value="Sort ↓" />
+                                </MultiDataTrigger>
+                                <DataTrigger
+                                    Binding="{Binding Column.CanUserSort, RelativeSource={RelativeSource Self}}"
+                                    Value="False">
+                                    <Setter Property="ToolTip" Value="{x:Null}" />
+                                </DataTrigger><!--
+                                PingMonitor header hover -->
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background"
+                                        Value="{DynamicResource Theme.Hover.Background}" />
+                                    <Setter Property="Foreground"
+                                        Value="{DynamicResource Theme.Accent}" />
+                                </Trigger>
+                            </Style.Triggers>
                         </Style>
-                        <Style x:Key="LeftHeaderStyle" TargetType="DataGridColumnHeader" BasedOn="{StaticResource {x:Type DataGridColumnHeader}}">
-                            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                        <Style x:Key="LeftHeaderStyle" TargetType="DataGridColumnHeader"
+                            BasedOn="{StaticResource {x:Type DataGridColumnHeader}}">
+                            <Setter Property="HorizontalContentAlignment" Value="Left" />
+                            <Style.Triggers><!-- PingMonitor header hover -->
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background"
+                                        Value="{DynamicResource Theme.Hover.Background}" />
+                                    <Setter Property="Foreground"
+                                        Value="{DynamicResource Theme.Accent}" />
+                                </Trigger>
+                            </Style.Triggers>
                         </Style>
                         <Style TargetType="DataGridRow">
-                            <Setter Property="Background" Value="{DynamicResource Theme.Card.Background}"/>
-                            <Setter Property="Foreground" Value="{DynamicResource Theme.Text.Primary}"/>
-                            <Setter Property="Cursor" Value="Arrow"/>
-                            <Setter Property="BorderBrush" Value="{DynamicResource Theme.Divider}"/>
-                            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                            <Setter Property="Background"
+                                Value="{DynamicResource Theme.Card.Background}" />
+                            <Setter Property="Foreground"
+                                Value="{DynamicResource Theme.Text.Primary}" />
+                            <Setter Property="Cursor" Value="Arrow" />
+                            <Setter Property="BorderBrush" Value="{DynamicResource Theme.Divider}" />
+                            <Setter Property="BorderThickness" Value="0,0,0,1" />
                             <Style.Triggers>
                                 <Trigger Property="IsSelected" Value="True">
-                                    <Setter Property="Background" Value="{DynamicResource Theme.Hover.Background}"/>
+                                    <Setter Property="Background"
+                                        Value="{DynamicResource Theme.Hover.Background}" />
                                 </Trigger>
                             </Style.Triggers>
                         </Style>
                         <Style TargetType="DataGridCell">
-                            <Setter Property="BorderThickness" Value="0"/>
-                            <Setter Property="Padding" Value="8,0,8,0"/>
-                            <Setter Property="VerticalContentAlignment" Value="Center"/>
-                            <Setter Property="HorizontalContentAlignment" Value="Center"/>
-                            <Setter Property="Background" Value="Transparent"/>
-                            <Setter Property="ClipToBounds" Value="True"/>
-                            <Setter Property="Foreground" Value="{DynamicResource Theme.Text.Primary}"/>
-                            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                            <Setter Property="BorderThickness" Value="0" />
+                            <Setter Property="Padding" Value="8,0,8,0" />
+                            <Setter Property="VerticalContentAlignment" Value="Center" />
+                            <Setter Property="HorizontalContentAlignment" Value="Center" />
+                            <Setter Property="Background" Value="Transparent" />
+                            <Setter Property="ClipToBounds" Value="True" />
+                            <Setter Property="Foreground"
+                                Value="{DynamicResource Theme.Text.Primary}" />
+                            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
                         </Style>
                     </DataGrid.Resources>
                     <DataGrid.Columns>
                         <DataGridTemplateColumn Header="" SortMemberPath="Status" Width="50">
-                            <DataGridTemplateColumn.CellTemplate><DataTemplate>
-                                <Ellipse Width="10" Height="10" Fill="{Binding StatusBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </DataTemplate></DataGridTemplateColumn.CellTemplate>
+                            <DataGridTemplateColumn.HeaderStyle>
+                                <Style TargetType="DataGridColumnHeader"
+                                    BasedOn="{StaticResource {x:Type DataGridColumnHeader}}">
+                                    <Setter Property="ToolTip" Value="Sort ↑" />
+                                    <Setter Property="ToolTipService.Placement" Value="Bottom" />
+                                    <Setter Property="ToolTipService.PlacementTarget"
+                                        Value="{Binding RelativeSource={RelativeSource Self}}" />
+                                    <Setter Property="ToolTipService.HorizontalOffset" Value="0" />
+                                    <Setter Property="ToolTipService.VerticalOffset" Value="2" />
+                                    <Style.Triggers>
+                                        <DataTrigger
+                                            Binding="{Binding Column.SortDirection, RelativeSource={RelativeSource Self}}"
+                                            Value="Ascending">
+                                            <Setter Property="ToolTip" Value="Sort ↓" />
+                                        </DataTrigger><!--
+                                        PingMonitor header hover -->
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Background"
+                                                Value="{DynamicResource Theme.Hover.Background}" />
+                                            <Setter Property="Foreground"
+                                                Value="{DynamicResource Theme.Accent}" />
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DataGridTemplateColumn.HeaderStyle>
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Ellipse Width="10" Height="10" Fill="{Binding StatusBrush}"
+                                        HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTemplateColumn Header="Host" SortMemberPath="HostName" MinWidth="120" Width="180" HeaderStyle="{StaticResource LeftHeaderStyle}">
-                            <DataGridTemplateColumn.CellTemplate><DataTemplate>
-                                <TextBlock Text="{Binding HostName}" FontSize="13" Foreground="{DynamicResource Theme.Text.Primary}"
-                                    TextTrimming="CharacterEllipsis" ToolTip="{Binding HostName}" Margin="8,0"
-                                    HorizontalAlignment="Left" VerticalAlignment="Center"/>
-                            </DataTemplate></DataGridTemplateColumn.CellTemplate>
+                        <DataGridTemplateColumn Header="Host" SortMemberPath="HostName"
+                            MinWidth="120" Width="180">
+                            <DataGridTemplateColumn.HeaderStyle>
+                                <Style TargetType="DataGridColumnHeader"
+                                    BasedOn="{StaticResource LeftHeaderStyle}">
+                                    <Setter Property="ToolTip" Value="Sort ↑" />
+                                    <Setter Property="ToolTipService.Placement" Value="Bottom" />
+                                    <Setter Property="ToolTipService.PlacementTarget"
+                                        Value="{Binding RelativeSource={RelativeSource Self}}" />
+                                    <Setter Property="ToolTipService.HorizontalOffset" Value="0" />
+                                    <Setter Property="ToolTipService.VerticalOffset" Value="2" />
+                                    <Style.Triggers>
+                                        <DataTrigger
+                                            Binding="{Binding Column.SortDirection, RelativeSource={RelativeSource Self}}"
+                                            Value="Ascending">
+                                            <Setter Property="ToolTip" Value="Sort ↓" />
+                                        </DataTrigger><!--
+                                        PingMonitor header hover -->
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Background"
+                                                Value="{DynamicResource Theme.Hover.Background}" />
+                                            <Setter Property="Foreground"
+                                                Value="{DynamicResource Theme.Accent}" />
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DataGridTemplateColumn.HeaderStyle>
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding HostName}" FontSize="13"
+                                        Foreground="{DynamicResource Theme.Text.Primary}"
+                                        TextTrimming="CharacterEllipsis"
+                                        ToolTip="{Binding HostName}" Margin="8,0"
+                                        HorizontalAlignment="Left" VerticalAlignment="Center" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTemplateColumn Header="IP" SortMemberPath="IP" Width="Auto" HeaderStyle="{StaticResource LeftHeaderStyle}">
-                            <DataGridTemplateColumn.CellTemplate><DataTemplate>
-                                <TextBlock Text="{Binding DisplayIp}" FontSize="12" Foreground="{DynamicResource Theme.Text.Secondary}" Margin="8,0"
-                                    HorizontalAlignment="Left" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                            </DataTemplate></DataGridTemplateColumn.CellTemplate>
+                        <DataGridTemplateColumn Header="IP" SortMemberPath="IP" Width="Auto">
+                            <DataGridTemplateColumn.HeaderStyle>
+                                <Style TargetType="DataGridColumnHeader"
+                                    BasedOn="{StaticResource LeftHeaderStyle}">
+                                    <Setter Property="ToolTip" Value="Sort ↑" />
+                                    <Setter Property="ToolTipService.Placement" Value="Bottom" />
+                                    <Setter Property="ToolTipService.PlacementTarget"
+                                        Value="{Binding RelativeSource={RelativeSource Self}}" />
+                                    <Setter Property="ToolTipService.HorizontalOffset" Value="0" />
+                                    <Setter Property="ToolTipService.VerticalOffset" Value="2" />
+                                    <Style.Triggers>
+                                        <DataTrigger
+                                            Binding="{Binding Column.SortDirection, RelativeSource={RelativeSource Self}}"
+                                            Value="Ascending">
+                                            <Setter Property="ToolTip" Value="Sort ↓" />
+                                        </DataTrigger><!--
+                                        PingMonitor header hover -->
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Background"
+                                                Value="{DynamicResource Theme.Hover.Background}" />
+                                            <Setter Property="Foreground"
+                                                Value="{DynamicResource Theme.Accent}" />
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DataGridTemplateColumn.HeaderStyle>
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding DisplayIp}" FontSize="12"
+                                        Foreground="{DynamicResource Theme.Text.Secondary}"
+                                        Margin="8,0" HorizontalAlignment="Left"
+                                        VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTemplateColumn Header="Latency" SortMemberPath="Latency" Width="Auto">
-                            <DataGridTemplateColumn.CellTemplate><DataTemplate>
-                                <TextBlock Text="{Binding DisplayLatency}" FontSize="13" FontWeight="SemiBold" Foreground="{Binding LatencyBrush}"
-                                    HorizontalAlignment="Center" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                            </DataTemplate></DataGridTemplateColumn.CellTemplate>
+                        <DataGridTemplateColumn Header="Latency" SortMemberPath="Latency"
+                            Width="Auto">
+                            <DataGridTemplateColumn.HeaderStyle>
+                                <Style TargetType="DataGridColumnHeader"
+                                    BasedOn="{StaticResource {x:Type DataGridColumnHeader}}">
+                                    <Setter Property="ToolTip" Value="Sort ↑" />
+                                    <Setter Property="ToolTipService.Placement" Value="Bottom" />
+                                    <Setter Property="ToolTipService.PlacementTarget"
+                                        Value="{Binding RelativeSource={RelativeSource Self}}" />
+                                    <Setter Property="ToolTipService.HorizontalOffset" Value="0" />
+                                    <Setter Property="ToolTipService.VerticalOffset" Value="2" />
+                                    <Style.Triggers>
+                                        <DataTrigger
+                                            Binding="{Binding Column.SortDirection, RelativeSource={RelativeSource Self}}"
+                                            Value="Ascending">
+                                            <Setter Property="ToolTip" Value="Sort ↓" />
+                                        </DataTrigger><!--
+                                        PingMonitor header hover -->
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Background"
+                                                Value="{DynamicResource Theme.Hover.Background}" />
+                                            <Setter Property="Foreground"
+                                                Value="{DynamicResource Theme.Accent}" />
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DataGridTemplateColumn.HeaderStyle>
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding DisplayLatency}" FontSize="13"
+                                        FontWeight="SemiBold" Foreground="{Binding LatencyBrush}"
+                                        HorizontalAlignment="Center" VerticalAlignment="Center"
+                                        TextTrimming="CharacterEllipsis" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
                         <DataGridTemplateColumn Header="Drop" SortMemberPath="Drop" Width="Auto">
-                            <DataGridTemplateColumn.CellTemplate><DataTemplate>
-                                <TextBlock Text="{Binding DisplayDrop}" FontSize="11" Foreground="{DynamicResource Theme.Text.Muted}"
-                                    HorizontalAlignment="Center" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                            </DataTemplate></DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>                        
+                            <DataGridTemplateColumn.HeaderStyle>
+                                <Style TargetType="DataGridColumnHeader"
+                                    BasedOn="{StaticResource {x:Type DataGridColumnHeader}}">
+                                    <Setter Property="ToolTip" Value="Sort ↑" />
+                                    <Setter Property="ToolTipService.Placement" Value="Bottom" />
+                                    <Setter Property="ToolTipService.PlacementTarget"
+                                        Value="{Binding RelativeSource={RelativeSource Self}}" />
+                                    <Setter Property="ToolTipService.HorizontalOffset" Value="0" />
+                                    <Setter Property="ToolTipService.VerticalOffset" Value="2" />
+                                    <Style.Triggers>
+                                        <DataTrigger
+                                            Binding="{Binding Column.SortDirection, RelativeSource={RelativeSource Self}}"
+                                            Value="Ascending">
+                                            <Setter Property="ToolTip" Value="Sort ↓" />
+                                        </DataTrigger><!--
+                                        PingMonitor header hover -->
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Background"
+                                                Value="{DynamicResource Theme.Hover.Background}" />
+                                            <Setter Property="Foreground"
+                                                Value="{DynamicResource Theme.Accent}" />
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DataGridTemplateColumn.HeaderStyle>
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding DisplayDrop}" FontSize="11"
+                                        Foreground="{DynamicResource Theme.Text.Muted}"
+                                        HorizontalAlignment="Center" VerticalAlignment="Center"
+                                        TextTrimming="CharacterEllipsis" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
                         <DataGridTemplateColumn Header="Avg" SortMemberPath="Avg" Width="Auto">
-                            <DataGridTemplateColumn.CellTemplate><DataTemplate>
-                                <TextBlock Text="{Binding DisplayAvg}" FontSize="11" Foreground="{DynamicResource Theme.Text.Muted}"
-                                    HorizontalAlignment="Center" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                            </DataTemplate></DataGridTemplateColumn.CellTemplate>
+                            <DataGridTemplateColumn.HeaderStyle>
+                                <Style TargetType="DataGridColumnHeader"
+                                    BasedOn="{StaticResource {x:Type DataGridColumnHeader}}">
+                                    <Setter Property="ToolTip" Value="Sort ↑" />
+                                    <Setter Property="ToolTipService.Placement" Value="Bottom" />
+                                    <Setter Property="ToolTipService.PlacementTarget"
+                                        Value="{Binding RelativeSource={RelativeSource Self}}" />
+                                    <Setter Property="ToolTipService.HorizontalOffset" Value="0" />
+                                    <Setter Property="ToolTipService.VerticalOffset" Value="2" />
+                                    <Style.Triggers>
+                                        <DataTrigger
+                                            Binding="{Binding Column.SortDirection, RelativeSource={RelativeSource Self}}"
+                                            Value="Ascending">
+                                            <Setter Property="ToolTip" Value="Sort ↓" />
+                                        </DataTrigger><!--
+                                        PingMonitor header hover -->
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Background"
+                                                Value="{DynamicResource Theme.Hover.Background}" />
+                                            <Setter Property="Foreground"
+                                                Value="{DynamicResource Theme.Accent}" />
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DataGridTemplateColumn.HeaderStyle>
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding DisplayAvg}" FontSize="11"
+                                        Foreground="{DynamicResource Theme.Text.Muted}"
+                                        HorizontalAlignment="Center" VerticalAlignment="Center"
+                                        TextTrimming="CharacterEllipsis" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
                         <DataGridTemplateColumn Header="Min" SortMemberPath="Min" Width="Auto">
-                            <DataGridTemplateColumn.CellTemplate><DataTemplate>
-                                <TextBlock Text="{Binding DisplayMin}" FontSize="11" Foreground="{DynamicResource Theme.Text.Muted}"
-                                    HorizontalAlignment="Center" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                            </DataTemplate></DataGridTemplateColumn.CellTemplate>
+                            <DataGridTemplateColumn.HeaderStyle>
+                                <Style TargetType="DataGridColumnHeader"
+                                    BasedOn="{StaticResource {x:Type DataGridColumnHeader}}">
+                                    <Setter Property="ToolTip" Value="Sort ↑" />
+                                    <Setter Property="ToolTipService.Placement" Value="Bottom" />
+                                    <Setter Property="ToolTipService.PlacementTarget"
+                                        Value="{Binding RelativeSource={RelativeSource Self}}" />
+                                    <Setter Property="ToolTipService.HorizontalOffset" Value="0" />
+                                    <Setter Property="ToolTipService.VerticalOffset" Value="2" />
+                                    <Style.Triggers>
+                                        <DataTrigger
+                                            Binding="{Binding Column.SortDirection, RelativeSource={RelativeSource Self}}"
+                                            Value="Ascending">
+                                            <Setter Property="ToolTip" Value="Sort ↓" />
+                                        </DataTrigger><!--
+                                        PingMonitor header hover -->
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Background"
+                                                Value="{DynamicResource Theme.Hover.Background}" />
+                                            <Setter Property="Foreground"
+                                                Value="{DynamicResource Theme.Accent}" />
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DataGridTemplateColumn.HeaderStyle>
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding DisplayMin}" FontSize="11"
+                                        Foreground="{DynamicResource Theme.Text.Muted}"
+                                        HorizontalAlignment="Center" VerticalAlignment="Center"
+                                        TextTrimming="CharacterEllipsis" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
                         <DataGridTemplateColumn Header="Max" SortMemberPath="Max" Width="Auto">
-                            <DataGridTemplateColumn.CellTemplate><DataTemplate>
-                                <TextBlock Text="{Binding DisplayMax}" FontSize="11" Foreground="{DynamicResource Theme.Text.Muted}"
-                                    HorizontalAlignment="Center" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                            </DataTemplate></DataGridTemplateColumn.CellTemplate>
+                            <DataGridTemplateColumn.HeaderStyle>
+                                <Style TargetType="DataGridColumnHeader"
+                                    BasedOn="{StaticResource {x:Type DataGridColumnHeader}}">
+                                    <Setter Property="ToolTip" Value="Sort ↑" />
+                                    <Setter Property="ToolTipService.Placement" Value="Bottom" />
+                                    <Setter Property="ToolTipService.PlacementTarget"
+                                        Value="{Binding RelativeSource={RelativeSource Self}}" />
+                                    <Setter Property="ToolTipService.HorizontalOffset" Value="0" />
+                                    <Setter Property="ToolTipService.VerticalOffset" Value="2" />
+                                    <Style.Triggers>
+                                        <DataTrigger
+                                            Binding="{Binding Column.SortDirection, RelativeSource={RelativeSource Self}}"
+                                            Value="Ascending">
+                                            <Setter Property="ToolTip" Value="Sort ↓" />
+                                        </DataTrigger><!--
+                                        PingMonitor header hover -->
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Background"
+                                                Value="{DynamicResource Theme.Hover.Background}" />
+                                            <Setter Property="Foreground"
+                                                Value="{DynamicResource Theme.Accent}" />
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DataGridTemplateColumn.HeaderStyle>
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding DisplayMax}" FontSize="11"
+                                        Foreground="{DynamicResource Theme.Text.Muted}"
+                                        HorizontalAlignment="Center" VerticalAlignment="Center"
+                                        TextTrimming="CharacterEllipsis" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTemplateColumn Header="History" SortMemberPath="History" Width="Auto" HeaderStyle="{StaticResource LeftHeaderStyle}">
-                            <DataGridTemplateColumn.CellTemplate><DataTemplate>
-                                <ItemsControl ItemsSource="{Binding HistoryDisplay}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="8,0">
-                                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                                    <ItemsControl.ItemTemplate><DataTemplate>
-                                        <Border Width="10" Height="10" CornerRadius="2" Margin="0,0,3,0" Background="{Binding Brush}" ToolTip="{Binding ToolTip}"/>
-                                    </DataTemplate></ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </DataTemplate></DataGridTemplateColumn.CellTemplate>
+                        <DataGridTemplateColumn Header="History" CanUserSort="False"
+                            SortMemberPath="History" Width="Auto"
+                            HeaderStyle="{StaticResource LeftHeaderStyle}">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <ItemsControl ItemsSource="{Binding HistoryDisplay}"
+                                        HorizontalAlignment="Left" VerticalAlignment="Center"
+                                        Margin="8,0">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <StackPanel Orientation="Horizontal" />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Width="10" Height="10" CornerRadius="2"
+                                                    Margin="0,0,3,0" Background="{Binding Brush}"
+                                                    ToolTip="{Binding ToolTip}" />
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
                     </DataGrid.Columns>
                 </DataGrid>
                 <Canvas x:Name="TableDragOverlay" IsHitTestVisible="False">
-                    <Border x:Name="TableDropLine" Height="3" CornerRadius="1.5" Background="{DynamicResource Theme.Accent}" Visibility="Collapsed"/>
+                    <Border x:Name="TableDropLine" Height="3" CornerRadius="1.5"
+                        Background="{DynamicResource Theme.Accent}" Visibility="Collapsed" />
                 </Canvas>
             </Grid>
         </Grid>
-        <Border x:Name="StatusBar" Grid.Row="4" Background="{DynamicResource Theme.Toolbar.Background}" BorderBrush="{DynamicResource Theme.Divider}" BorderThickness="0,1,0,0" Padding="14,7">
+        <Border x:Name="StatusBar" Grid.Row="4"
+            Background="{DynamicResource Theme.Toolbar.Background}"
+            BorderBrush="{DynamicResource Theme.Divider}" BorderThickness="0,1,0,0" Padding="14,7">
             <DockPanel>
-                <TextBlock x:Name="StatusText" Text="Ready" Foreground="{DynamicResource Theme.Text.Secondary}"/>
-                <TextBlock Text="F2 Load   F3 / Ctrl+S Save   F4 Clear   Ctrl+, Options   F8 View   F9 Compact" Foreground="{DynamicResource Theme.Text.Muted}" HorizontalAlignment="Right"/>
+                <TextBlock x:Name="StatusText" Text="Ready"
+                    Foreground="{DynamicResource Theme.Text.Secondary}" />
+                <TextBlock
+                    Text="F2 Load   F3 / Ctrl+S Save   F4 Clear   F5 Reset   F6 Pause/Resume   Ctrl+, Options   F8 View   F9 Compact"
+                    Foreground="{DynamicResource Theme.Text.Muted}" HorizontalAlignment="Right" />
             </DockPanel>
         </Border>
-        <Border x:Name="ModalOverlay" Grid.Row="0" Grid.RowSpan="5" Background="{DynamicResource Theme.Overlay.Background}" Visibility="Collapsed" IsHitTestVisible="False"/>
-        <Path x:Name="ResizeGrip" Grid.Row="0" Grid.RowSpan="5" Width="12" Height="12" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,4,4" Data="M5,11 L11,5 M9,11 L11,9" Stroke="{DynamicResource Theme.Text.Muted}" StrokeThickness="1.25" StrokeStartLineCap="Round" StrokeEndLineCap="Round" IsHitTestVisible="False"/>
+        <Border x:Name="ModalOverlay" Grid.Row="0" Grid.RowSpan="5"
+            Background="{DynamicResource Theme.Overlay.Background}" Visibility="Collapsed"
+            IsHitTestVisible="False" />
+        <Path x:Name="ResizeGrip" Grid.Row="0" Grid.RowSpan="5" Width="12" Height="12"
+            HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,4,4"
+            Data="M5,11 L11,5 M9,11 L11,9" Stroke="{DynamicResource Theme.Text.Muted}"
+            StrokeThickness="1.25" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+            IsHitTestVisible="False" />
     </Grid>
 </Window>
 '@
@@ -1321,7 +1710,7 @@ function Set-ViewMode {
 #region 12.Views.MonitorCard
 
 $script:MonitorCardXaml = [xml]@'
-<Border xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+<Border x:Name="MonitorCardRoot" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Width="222" Height="Auto" Margin="4" Padding="0" Background="{DynamicResource Theme.Card.Background}" BorderBrush="{DynamicResource Theme.Card.Border}" BorderThickness="1" CornerRadius="10">
     <Border.Effect>
         <DropShadowEffect BlurRadius="12" ShadowDepth="2" Opacity="0.06" Color="{DynamicResource Theme.Shadow.Color}"/>
@@ -1338,7 +1727,7 @@ $script:MonitorCardXaml = [xml]@'
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-            <Grid Grid.Row="0">
+            <Grid Grid.Row="0" MinHeight="24">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
@@ -1348,6 +1737,16 @@ $script:MonitorCardXaml = [xml]@'
                     <TextBlock x:Name="IpText" FontSize="11" Foreground="{DynamicResource Theme.Text.Secondary}" Margin="0,1,0,0" TextTrimming="CharacterEllipsis"/>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
+                    <StackPanel.Style>
+                        <Style TargetType="StackPanel">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsMouseOver, ElementName=MonitorCardRoot}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
                     <Button x:Name="ResetButton" Width="22" Height="22" Content="&#x21BB;" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,2" Foreground="{DynamicResource Theme.Text.Muted}" ToolTip="Reset statistics" Style="{DynamicResource IconButtonStyle}"/>
                     <Button x:Name="PauseButton" Width="22" Height="22" Content="&#x275A;&#x275A;" FontSize="12" Foreground="{DynamicResource Theme.Text.Muted}" ToolTip="Pause monitoring" Style="{DynamicResource IconButtonStyle}"/>
                     <Button x:Name="RemoveButton" Width="22" Height="22" Content="&#x2716;" FontSize="9" Foreground="{DynamicResource Theme.Text.Muted}" ToolTip="Remove monitor" Style="{DynamicResource IconButtonStyle}"/>
@@ -1390,7 +1789,7 @@ $script:MonitorCardXaml = [xml]@'
     </Grid>
 </Border>
 '@
-function Apply-CardVisibility {
+function Set-CardVisibility {
     param([Parameter(Mandatory)][hashtable]$UI)
 
     $elements = @(
@@ -1468,7 +1867,7 @@ function New-MonitorCard {
             $script:CardElementVisibility[[string]$sender.Tag] = [bool]$sender.IsChecked
             
             foreach ($mon in $script:Monitors.Values) {
-                Apply-CardVisibility -UI $mon.Controls
+                Set-CardVisibility -UI $mon.Controls
             }
             Update-WindowMinSize
         })
@@ -1477,11 +1876,12 @@ function New-MonitorCard {
     [void]$menu.Items.Add([System.Windows.Controls.Separator]::new())
     $exportItem = [System.Windows.Controls.MenuItem]::new()
     $exportItem.Header = 'Export'
+    $exportItem.Icon = New-TransferMenuIcon -Export
     $exportItem.Style = $Window.FindResource('ThemedContextMenuItemStyle')
     $exportItem.Add_Click({ Export-MonitorHosts })
     [void]$menu.Items.Add($exportItem)
     $card.ContextMenu = $menu
-    Apply-CardVisibility -UI $controls    
+    Set-CardVisibility -UI $controls    
 
     return $controls
 }
@@ -1743,70 +2143,7 @@ $script:OptionsFieldSpecs = @(
     [pscustomobject]@{ Name = 'HistoryDepth'; Control = 'HistoryInput'; Min = 0; Max = 20; Error = 'History samples must be between 0 and 20.' }
 )
 $script:OptionsDialogXaml = [xml]@'
-<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="Options" Width="390" SizeToContent="Height" ResizeMode="NoResize" WindowStyle="None" WindowStartupLocation="CenterOwner" ShowInTaskbar="False" AllowsTransparency="True" Background="Transparent" FontFamily="Segoe UI" FontSize="13" SnapsToDevicePixels="True">
-    <Border Margin="0" Background="{DynamicResource Theme.Window.Background}" BorderBrush="{DynamicResource Theme.Border}" BorderThickness="1" CornerRadius="10" ClipToBounds="True">
-        <Border.Effect>
-            <DropShadowEffect Color="{DynamicResource Theme.Shadow.Color}" BlurRadius="12" ShadowDepth="4" Opacity="0.12"/>
-
-        </Border.Effect>
-        <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="32"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
-            <Border x:Name="OptionsTitleBar" Grid.Row="0" Height="32" Background="{DynamicResource Theme.Toolbar.Background}" BorderBrush="{DynamicResource Theme.Divider}" BorderThickness="0,0,0,1" CornerRadius="9,9,0,0">
-            <DockPanel>
-                <Button x:Name="OptionsCloseButton" DockPanel.Dock="Right" Content="&#xE8BB;" ToolTip="Close" Style="{DynamicResource CaptionCloseButtonStyle}"/>
-                <Viewbox x:Name="OptionsTitleLogoBox" Width="16" Height="16" Margin="10,0,8,0" VerticalAlignment="Center" IsHitTestVisible="False"/>
-                <TextBlock Text="Options" VerticalAlignment="Center" FontSize="12" Foreground="{DynamicResource Theme.Caption.Foreground}"/>
-            </DockPanel>
-        </Border>
-            <Grid Grid.Row="1" Margin="20">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/>
-        </Grid.ColumnDefinitions>
-        <TextBlock Grid.Row="0" Grid.ColumnSpan="2" Text="General" FontSize="14" FontWeight="Light" Foreground="{DynamicResource Theme.Text.Primary}" Margin="3,0,0,6">
-            <TextBlock.Effect>
-                <DropShadowEffect Color="DarkGray" Opacity="0.4" BlurRadius="3" ShadowDepth="1" Direction="270"/>
-            </TextBlock.Effect>
-        </TextBlock>
-        <TextBlock Grid.Row="1" Text="Theme" Foreground="{DynamicResource Theme.Text.Primary}" VerticalAlignment="Center" Margin="0,5"/>
-        <ComboBox x:Name="ThemeInput" Grid.Row="1" Grid.Column="1" Width="150" Height="32" Margin="0,5" Padding="10,4"/>
-        <CheckBox x:Name="TopmostInput" Grid.Row="2" Grid.ColumnSpan="2" Content="Keep window always on top" Foreground="{DynamicResource Theme.Text.Primary}" Margin="0,8,0,4"/>
-        <CheckBox x:Name="AutoSaveInput" Grid.Row="3" Grid.ColumnSpan="2" Content="Auto-save on exit" Foreground="{DynamicResource Theme.Text.Primary}" Margin="0,4,0,4"/>
-        <Rectangle Grid.Row="4" Grid.ColumnSpan="2" Height="1" Fill="{DynamicResource Theme.Divider}" Margin="0,10,0,0"/>
-        <TextBlock Grid.Row="5" Grid.ColumnSpan="2" Text="Ping" FontSize="14" FontWeight="Light" Foreground="{DynamicResource Theme.Text.Primary}" Margin="3,14,0,6">
-            <TextBlock.Effect>
-                <DropShadowEffect Color="DarkGray" Opacity="0.4" BlurRadius="3" ShadowDepth="1" Direction="270"/>
-            </TextBlock.Effect>
-        </TextBlock>
-        <TextBlock Grid.Row="6" Text="History samples" Foreground="{DynamicResource Theme.Text.Primary}" VerticalAlignment="Center" Margin="0,5"/>
-        <TextBox x:Name="HistoryInput" Grid.Row="6" Grid.Column="1" Margin="0,5"/>
-        <TextBlock Grid.Row="7" Text="Interval (seconds)" Foreground="{DynamicResource Theme.Text.Primary}" VerticalAlignment="Center" Margin="0,5"/>
-        <TextBox x:Name="IntervalInput" Grid.Row="7" Grid.Column="1" Margin="0,5"/>
-        <TextBlock Grid.Row="8" Text="Timeout (milliseconds)" Foreground="{DynamicResource Theme.Text.Primary}" VerticalAlignment="Center" Margin="0,5"/>
-        <TextBox x:Name="TimeoutInput" Grid.Row="8" Grid.Column="1" Margin="0,5"/>
-        <TextBlock Grid.Row="9" Text="Buffer size (bytes)" Foreground="{DynamicResource Theme.Text.Primary}" VerticalAlignment="Center" Margin="0,5"/>
-        <TextBox x:Name="BufferInput" Grid.Row="9" Grid.Column="1" Margin="0,5"/>
-        <TextBlock Grid.Row="10" Text="TTL (hops)" Foreground="{DynamicResource Theme.Text.Primary}" VerticalAlignment="Center" Margin="0,5"/>
-        <TextBox x:Name="TtlInput" Grid.Row="10" Grid.Column="1" Margin="0,5"/>
-        <CheckBox x:Name="DontFragmentInput" Grid.Row="11" Grid.ColumnSpan="2" Content="Do not fragment packets" Foreground="{DynamicResource Theme.Text.Primary}" Margin="0,8,0,16"/>
-        <StackPanel Grid.Row="12" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button x:Name="CancelButton" Content="Cancel" IsCancel="True" Style="{DynamicResource PrimaryButtonStyle}" MinWidth="80"/>
-            <Button x:Name="OkButton" Content="Apply" IsDefault="True" MinWidth="80" Style="{DynamicResource ActionButtonStyle}"/>
-        </StackPanel>
-            </Grid>
-        </Grid>
-    </Border>
-</Window>
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="Options" Width="390" SizeToContent="Height" ResizeMode="NoResize" WindowStyle="None" WindowStartupLocation="CenterOwner" ShowInTaskbar="False" AllowsTransparency="True" Background="Transparent" FontFamily="Segoe UI" FontSize="13" SnapsToDevicePixels="True"><Border Margin="0" Background="{DynamicResource Theme.Window.Background}" BorderBrush="{DynamicResource Theme.Border}" BorderThickness="1" CornerRadius="10" ClipToBounds="True"><Border.Effect><DropShadowEffect Color="{DynamicResource Theme.Shadow.Color}" BlurRadius="12" ShadowDepth="4" Opacity="0.12" /></Border.Effect><Grid><Grid.RowDefinitions><RowDefinition Height="32" /><RowDefinition Height="Auto" /></Grid.RowDefinitions><Border x:Name="OptionsTitleBar" Grid.Row="0" Height="32" Background="{DynamicResource Theme.Toolbar.Background}" BorderBrush="{DynamicResource Theme.Divider}" BorderThickness="0,0,0,1" CornerRadius="9,9,0,0"><DockPanel><Button x:Name="OptionsCloseButton" DockPanel.Dock="Right" Content="" ToolTip="Close" Style="{DynamicResource CaptionCloseButtonStyle}" /><Viewbox x:Name="OptionsTitleLogoBox" Width="16" Height="16" Margin="10,0,8,0" VerticalAlignment="Center" IsHitTestVisible="False" /><TextBlock Text="Options" VerticalAlignment="Center" FontSize="12" Foreground="{DynamicResource Theme.Caption.Foreground}" /></DockPanel></Border><Grid Grid.Row="1" Margin="20"><Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><TextBlock Grid.Row="0" Grid.ColumnSpan="2" Text="General" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource Theme.Text.Primary}" Margin="0,0,0,8"></TextBlock><TextBlock Grid.Row="1" Text="Theme" Foreground="{DynamicResource Theme.Text.Primary}" VerticalAlignment="Center" Margin="0,5" /><ComboBox x:Name="ThemeInput" Grid.Row="1" Grid.Column="1" Width="150" Height="32" Margin="0,5" Padding="10,4" /><CheckBox x:Name="TopmostInput" Grid.Row="2" Grid.ColumnSpan="2" Content="Keep window always on top" Foreground="{DynamicResource Theme.Text.Primary}" Margin="0,8,0,4" /><CheckBox x:Name="AutoSaveInput" Grid.Row="3" Grid.ColumnSpan="2" Content="Auto-save on exit" Foreground="{DynamicResource Theme.Text.Primary}" Margin="0,4,0,4" /><Rectangle Grid.Row="4" Grid.ColumnSpan="2" Height="1" Fill="{DynamicResource Theme.Divider}" Margin="0,10,0,0" /><TextBlock Grid.Row="5" Grid.ColumnSpan="2" Text="Ping" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource Theme.Text.Primary}" Margin="0,14,0,8"></TextBlock><TextBlock Grid.Row="6" Text="History samples" Foreground="{DynamicResource Theme.Text.Primary}" VerticalAlignment="Center" Margin="0,5" /><TextBox x:Name="HistoryInput" Grid.Row="6" Grid.Column="1" Margin="0,5" /><TextBlock Grid.Row="7" Text="Interval (seconds)" Foreground="{DynamicResource Theme.Text.Primary}" VerticalAlignment="Center" Margin="0,5" /><TextBox x:Name="IntervalInput" Grid.Row="7" Grid.Column="1" Margin="0,5" /><TextBlock Grid.Row="8" Text="Timeout (milliseconds)" Foreground="{DynamicResource Theme.Text.Primary}" VerticalAlignment="Center" Margin="0,5" /><TextBox x:Name="TimeoutInput" Grid.Row="8" Grid.Column="1" Margin="0,5" /><TextBlock Grid.Row="9" Text="Buffer size (bytes)" Foreground="{DynamicResource Theme.Text.Primary}" VerticalAlignment="Center" Margin="0,5" /><TextBox x:Name="BufferInput" Grid.Row="9" Grid.Column="1" Margin="0,5" /><TextBlock Grid.Row="10" Text="TTL (hops)" Foreground="{DynamicResource Theme.Text.Primary}" VerticalAlignment="Center" Margin="0,5" /><TextBox x:Name="TtlInput" Grid.Row="10" Grid.Column="1" Margin="0,5" /><CheckBox x:Name="DontFragmentInput" Grid.Row="11" Grid.ColumnSpan="2" Content="Do not fragment packets" Foreground="{DynamicResource Theme.Text.Primary}" Margin="0,8,0,16" /><StackPanel Grid.Row="12" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right"><Button x:Name="CancelButton" Content="Cancel" IsCancel="True" Style="{DynamicResource PrimaryButtonStyle}" MinWidth="80" /><Button x:Name="OkButton" Content="Apply" IsDefault="True" MinWidth="80" Style="{DynamicResource ActionButtonStyle}" /></StackPanel></Grid></Grid></Border></Window>
 '@
 function Read-OptionsFields {
     param([Parameter(Mandatory)]$Dialog)
@@ -1933,6 +2270,7 @@ function Update-DropIndicator {
     $indicator.Visibility = [System.Windows.Visibility]::Visible
 }
 function Update-MonitorSequences {
+    Reset-TableSortIndicator
     $seq = 1
     foreach ($child in $MonitorPanel.Children) {
         $mon = $script:Monitors.Values | Where-Object { $_.Controls.Card -eq $child }
@@ -2014,6 +2352,123 @@ function Register-CardDragSource {
 #region 25.ViewModel.TableView
 
 $script:TableColumnVisibility = [ordered]@{ Status = $true; Host = $true; IP = $true; Latency = $true; Avg = $true; Min = $true; Max = $true; Drop = $true; History = $true }
+# Sorting is a one-time snapshot on header clicks, never a live collection sort.
+function Reset-TableSortIndicator {
+    if (-not $TableGrid) { return }
+    foreach ($column in $TableGrid.Columns) { $column.SortDirection = $null }
+}
+function ConvertTo-TableSortNumber {
+    param($Value)
+    if ($null -eq $Value -or [string]::IsNullOrWhiteSpace([string]$Value)) { return -1.0 }
+    $number = 0.0
+    if (-not [double]::TryParse([string]$Value, [Globalization.NumberStyles]::Float,
+            [Globalization.CultureInfo]::CurrentCulture, [ref]$number)) { return [double]::MaxValue }
+    if ([double]::IsNaN($number) -or [double]::IsInfinity($number) -or $number -lt 0) { return [double]::MaxValue }
+    return $number
+}
+function Get-TableSortValue {
+    param([Parameter(Mandatory)]$Monitor, [Parameter(Mandatory)][string]$Key)
+    switch ($Key) {
+        'Host' {
+            if ([string]::IsNullOrWhiteSpace([string]$Monitor.HostName)) { return '-1' }
+            return [string]$Monitor.HostName
+        }
+        'IP' {
+            $address = $null
+            if ([System.Net.IPAddress]::TryParse([string]$Monitor.DisplayIp, [ref]$address)) {
+                $bytes = $address.GetAddressBytes()
+                return ('{0:D2}:{1}' -f $bytes.Length, [BitConverter]::ToString($bytes))
+            }
+            return '-1'
+        }
+        'Latency' {
+            if (-not $Monitor.LastResult) { return -1.0 }
+            if ($Monitor.LastResult -and $Monitor.LastResult.Status -eq 'Success') {
+                return (ConvertTo-TableSortNumber $Monitor.LastResult.RttMs)
+            }
+            return [double]::MaxValue
+        }
+        'Avg' {
+            $sum = 0.0; $count = 0
+            foreach ($sample in $Monitor.History) {
+                if ($sample.Status -eq 'Success') {
+                    $number = ConvertTo-TableSortNumber $sample.RttMs
+                    if ($number -ge 0 -and $number -lt [double]::MaxValue) { $sum += $number; $count++ }
+                }
+            }
+            if ($count) { return (ConvertTo-TableSortNumber ([Math]::Round($sum / $count))) }
+            return -1.0
+        }
+        'Min' { return (ConvertTo-TableSortNumber $Monitor.LifetimeMin) }
+        'Max' { return (ConvertTo-TableSortNumber $Monitor.LifetimeMax) }
+        'Drop' { return (ConvertTo-TableSortNumber $Monitor.DroppedPackets) }
+        'Status' {
+            if ($Monitor.Paused) { return 4 }
+            if (-not $Monitor.LastResult) { return -1 }
+            if ($Monitor.LastResult.Status -ne 'Success') { return 3 }
+            $rtt = ConvertTo-TableSortNumber $Monitor.LastResult.RttMs
+            if ($rtt -lt 0) { return -1 }
+            if ($rtt -gt $script:RttSettings.CriticalMs) { return 2 }
+            if ($rtt -gt $script:RttSettings.WarningMs) { return 1 }
+            return 0
+        }
+    }
+    return -1
+}
+
+function Invoke-TableHeaderSort {
+    param([Parameter(Mandatory)]$Column)
+    $key = [string]$Column.SortMemberPath
+    if ($key -eq 'HostName') { $key = 'Host' }
+    if (@('Status', 'Host', 'IP', 'Latency', 'Avg', 'Min', 'Max', 'Drop') -notcontains $key) { return }
+    $descending = $Column.SortDirection -eq [System.ComponentModel.ListSortDirection]::Ascending
+    $selected = $TableGrid.SelectedItem
+    $rows = @(foreach ($monitor in $TableGrid.Items) {
+        [pscustomobject]@{
+            Monitor = $monitor
+            Value = Get-TableSortValue -Monitor $monitor -Key $key
+            Sequence = [long]$monitor.Sequence
+        }
+    })
+    $ordered = @($rows | Sort-Object -Property @{ Expression = { $_.Value }; Descending = $descending },
+        @{ Expression = { $_.Sequence }; Ascending = $true })
+    $TableGrid.Items.Clear()
+    foreach ($row in $ordered) { [void]$TableGrid.Items.Add($row.Monitor) }
+    Update-TableRowSequences
+    if ($selected -and $TableGrid.Items.Contains($selected)) { $TableGrid.SelectedItem = $selected }
+    $Column.SortDirection = if ($descending) {
+        [System.ComponentModel.ListSortDirection]::Descending
+    } else { [System.ComponentModel.ListSortDirection]::Ascending }
+    # BEGIN PingMonitor header mouse hover reset
+    # Re-hit-test only the clicked column header; do not change keyboard focus.
+    $point = [System.Windows.Input.Mouse]::GetPosition($TableGrid)
+    $header = Get-VisualAncestor -Start ($TableGrid.InputHitTest($point)) -Type ([System.Windows.Controls.Primitives.DataGridColumnHeader])
+    if ($header -and $header.Column -eq $Column -and $header.IsHitTestVisible) {
+        $property = [System.Windows.UIElement]::IsHitTestVisibleProperty
+        $localValue = $header.ReadLocalValue($property)
+        $binding = [System.Windows.Data.BindingOperations]::GetBindingBase($header, $property)
+        $restore = {
+            try {
+                if ($binding) {
+                    [void][System.Windows.Data.BindingOperations]::SetBinding($header, $property, $binding)
+                } elseif ($localValue -eq [System.Windows.DependencyProperty]::UnsetValue) {
+                    $header.ClearValue($property)
+                } else { $header.SetValue($property, $localValue) }
+            } finally { [System.Windows.Input.Mouse]::Synchronize() }
+        }.GetNewClosure()
+        try {
+            $header.SetCurrentValue($property, $false)
+            [System.Windows.Input.Mouse]::Synchronize()
+            # Restore on the next dispatcher pass, not within the same event.
+            [void]$header.Dispatcher.BeginInvoke(
+                [System.Windows.Threading.DispatcherPriority]::Input, [Action]$restore)
+        } catch {
+            & $restore
+            throw
+        }
+    }
+    # END PingMonitor header mouse hover reset
+}
 function Get-VisualAncestor {
     param($Start, [Parameter(Mandatory)][type]$Type)
     $current = $Start
@@ -2033,11 +2488,13 @@ function Sync-CardPanelOrder {
 }
 function Sync-TablePanelOrder {
     if (-not $TableGrid) { return }
+    Reset-TableSortIndicator
     $ordered = @($script:Monitors.Values | Sort-Object Sequence)
     $TableGrid.Items.Clear()
     foreach ($monitor in $ordered) { [void]$TableGrid.Items.Add($monitor) }
 }
 function Update-TableRowSequences {
+    Reset-TableSortIndicator
     $sequence = 1
     foreach ($monitor in @($TableGrid.Items)) { $monitor.Sequence = $sequence++ }
     Sync-CardPanelOrder
@@ -2066,7 +2523,7 @@ function New-RowActionMenuItem {
     $item.Tag = $Tag
     $item.Foreground = Get-ThemeBrush -Key 'MenuItem.TextFill'
     $icon = [System.Windows.Shapes.Path]::new()
-    $icon.Data = [System.Windows.Media.Geometry]::Parse($IconData)
+    if ($IconData) { $icon.Data = [System.Windows.Media.Geometry]::Parse($IconData) }
     $icon.Fill = Get-ThemeBrush -Key 'MenuItem.IconFill'
     $icon.Width = 14; $icon.Height = 14; $icon.Stretch = 'Uniform'
     $item.Icon = $icon
@@ -2090,7 +2547,10 @@ function Show-RowActionMenu {
     
     [void]$menu.Items.Add((New-RowActionMenuItem -Header 'Remove' -IconData $script:GlobalActionIcons.Clear -Tag "$($Monitor.Id)|Remove"))
     [void]$menu.Items.Add([System.Windows.Controls.Separator]::new())
-    [void]$menu.Items.Add((New-RowActionMenuItem -Header 'Export' -Tag 'Export')) #-IconData $script:GlobalActionIcons.Export
+    $exportItem = New-RowActionMenuItem -Header 'Export' -Tag 'Export'
+    $exportItem.Style = $Window.FindResource('ThemedContextMenuItemStyle')
+    $exportItem.Icon = New-TransferMenuIcon -Export
+    [void]$menu.Items.Add($exportItem)
     
     $menu.IsOpen = $true
 }
@@ -2125,6 +2585,12 @@ function Show-ColumnVisibilityMenu {
 }
 
 function Initialize-DataGridActions {
+    $TableGrid.Add_Sorting({
+        param($sender, $e)
+        # Suppress WPF's persistent sort; commit the clicked order to Sequence instead.
+        $e.Handled = $true
+        Invoke-TableHeaderSort -Column $e.Column
+    })
     $TableGrid.Add_PreviewMouseWheel({ param($sender, $e)
             if (-not [System.Windows.Input.Keyboard]::IsKeyDown([System.Windows.Input.Key]::LeftShift) -and
                 -not [System.Windows.Input.Keyboard]::IsKeyDown([System.Windows.Input.Key]::RightShift)) { return }
@@ -2601,106 +3067,26 @@ function Invoke-GlobalAction {
     $script:LastGlobalAction = $Action
     Update-GlobalActionButton
 }
-function New-GlobalActionMenuItem {
-    param([Parameter(Mandatory)][string]$Action, [Parameter(Mandatory)][string]$Text, [Parameter(Mandatory)][string]$IconData)
-    $button = [System.Windows.Controls.Button]::new()
-    $button.Style = $Window.FindResource('SplitMenuButtonStyle')
-    $button.Tag = $Action
-    $button.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
-    $button.HorizontalContentAlignment = [System.Windows.HorizontalAlignment]::Stretch
-    $button.VerticalContentAlignment = [System.Windows.VerticalAlignment]::Center
-    $grid = [System.Windows.Controls.Grid]::new()
-    $grid.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
-    $grid.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-    $grid.ColumnDefinitions.Add([System.Windows.Controls.ColumnDefinition]@{ Width = [System.Windows.GridLength]::new(20) })
-    $grid.ColumnDefinitions.Add([System.Windows.Controls.ColumnDefinition]@{ Width = [System.Windows.GridLength]::Auto })
-    $icon = [System.Windows.Shapes.Path]::new()
-    $icon.Data = [System.Windows.Media.Geometry]::Parse($IconData)
-    $icon.SetResourceReference([System.Windows.Shapes.Shape]::FillProperty, 'Theme.MenuItem.IconFill')
-    $icon.Width = 15; $icon.Height = 15
-    $icon.Stretch = [System.Windows.Media.Stretch]::Uniform
-    $icon.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
-    $icon.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-    [System.Windows.Controls.Grid]::SetColumn($icon, 0)
-    [void]$grid.Children.Add($icon)
-    $label = [System.Windows.Controls.TextBlock]::new()
-    $label.Text = $Text
-    if ($Action -eq 'PauseResume') { $script:GlobalPauseMenuLabel = $label }
-    $label.SetResourceReference([System.Windows.Controls.TextBlock]::ForegroundProperty, 'Theme.MenuItem.TextFill')
-    $label.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-    [System.Windows.Controls.Grid]::SetColumn($label, 1)
-    [void]$grid.Children.Add($label)
-    $button.Content = $grid
-    $button.Add_Click({
-            param($sender, $e)
-            $script:GlobalActionPopup.IsOpen = $false
-            Invoke-GlobalAction -Action ([string]$sender.Tag)
-            $e.Handled = $true
-        })
-    return $button
-}
 function Update-GlobalActionButton {
-    if (-not $GlobalActionButton -or -not $GlobalActionIcon -or -not $GlobalActionText) { return }
-    switch ($script:LastGlobalAction) {
-        'Reset' {
-            $label = 'Reset'; $tooltip = 'Reset all monitor statistics'; $iconData = $script:GlobalActionIcons.Reset
-        }
-        'PauseResume' {
-            $label = if ($script:GlobalPaused) { 'Resume' } else { 'Pause' }
-            $tooltip = if ($script:GlobalPaused) { 'Resume all monitors' } else { 'Pause all monitors' }
-            $iconData = if ($script:GlobalPaused) { $script:GlobalActionIcons.Resume } else { $script:GlobalActionIcons.Pause }
-        }
-        default {
-            $label = 'Clear'; $tooltip = 'Clear all monitors (F4)'; $iconData = $script:GlobalActionIcons.Clear
-        }
-    }
-    $GlobalActionText.Text = $label
-    $GlobalActionButton.ToolTip = $tooltip
-    $GlobalActionIcon.Data = [System.Windows.Media.Geometry]::Parse($iconData)
-    if ($script:GlobalPauseMenuLabel) { $script:GlobalPauseMenuLabel.Text = if ($script:GlobalPaused) { 'Resume' } else { 'Pause' } }
+    if (-not $GlobalPauseButton) { return }
+    $GlobalPauseText.Text = if ($script:GlobalPaused) { 'Resume' } else { 'Pause' }
+    $GlobalPauseButton.ToolTip = if ($script:GlobalPaused) { 'Resume all monitors (F6)' } else { 'Pause all monitors (F6)' }
+    $iconData = if ($script:GlobalPaused) { $script:GlobalActionIcons.Resume } else { $script:GlobalActionIcons.Pause }
+    $GlobalPauseIcon.Data = [System.Windows.Media.Geometry]::Parse($iconData)
 }
-function Show-GlobalActionMenu {
-    $script:GlobalActionSplitButtonBorder.UpdateLayout()
-    $targetWidth = [Math]::Max(88.0, [double]$script:GlobalActionSplitButtonBorder.ActualWidth)
-    $script:GlobalActionPopupBorder.MinWidth = $targetWidth
-    $script:GlobalActionPopup.IsOpen = $true
-}
-function Initialize-GlobalActionSplitButton {
-    $script:GlobalActionSplitButtonBorder = $Window.FindName('GlobalActionSplitButton')
-    $script:GlobalActionButton = $Window.FindName('GlobalActionButton')
-    $script:GlobalActionArrowButton = $Window.FindName('GlobalActionArrowButton')
-    $popup = [System.Windows.Controls.Primitives.Popup]::new()
-    $popup.AllowsTransparency = $true
-    $popup.StaysOpen = $false
-    $popup.PlacementTarget = $script:GlobalActionSplitButtonBorder
-    $popup.Placement = [System.Windows.Controls.Primitives.PlacementMode]::Bottom
-    $popup.VerticalOffset = 3
-    $outer = [System.Windows.Controls.Border]::new()
-    $outer.SetResourceReference([System.Windows.Controls.Border]::BackgroundProperty, 'Theme.Popup.Background')
-    $outer.SetResourceReference([System.Windows.Controls.Border]::BorderBrushProperty, 'Theme.Popup.Border')
-    $outer.BorderThickness = [System.Windows.Thickness]::new(1)
-    $outer.CornerRadius = [System.Windows.CornerRadius]::new(7)
-    $outer.Padding = [System.Windows.Thickness]::new(3)
-    $shadow = [System.Windows.Media.Effects.DropShadowEffect]::new()
-    $shadow.BlurRadius = 12; $shadow.ShadowDepth = 2; $shadow.Opacity = 0.12
-    $outer.Effect = $shadow
-    $panel = [System.Windows.Controls.StackPanel]::new()
-    $resetItem = New-GlobalActionMenuItem -Action 'Reset' -Text 'Reset' -IconData $script:GlobalActionIcons.Reset
-    $pauseItem = New-GlobalActionMenuItem -Action 'PauseResume' -Text 'Pause' -IconData $script:GlobalActionIcons.Pause
-    $clearItem = New-GlobalActionMenuItem -Action 'Clear' -Text 'Clear' -IconData $script:GlobalActionIcons.Clear
-    $panel.Children.Add($resetItem) | Out-Null
-    $panel.Children.Add($pauseItem) | Out-Null
-    $panel.Children.Add($clearItem) | Out-Null
-    $outer.Child = $panel
-    $popup.Child = $outer
-    $popup.Tag = $pauseItem
-    $script:GlobalActionPopup = $popup
-    $script:GlobalActionPopupBorder = $outer
-    $script:GlobalActionArrowButton.Add_Click({
-            if ($script:GlobalActionPopup.IsOpen) { $script:GlobalActionPopup.IsOpen = $false }
-            else { Show-GlobalActionMenu }
-        })
-    $script:GlobalActionButton.Add_Click({ $script:GlobalActionPopup.IsOpen = $false; Invoke-GlobalAction -Action $script:LastGlobalAction })
+function Initialize-ToolbarActions {
+    $GlobalPauseButton.Add_Click({ Invoke-GlobalAction -Action 'PauseResume' })
+    $GlobalResetButton.Add_Click({ Invoke-GlobalAction -Action 'Reset' })
+    $GlobalClearButton.Add_Click({ Invoke-GlobalAction -Action 'Clear' })
+    $OptionsArrowButton.Add_Click({ $OptionsPopup.IsOpen = -not $OptionsPopup.IsOpen })
+    $OptionsPopup.Add_PreviewKeyDown({
+        param($sender, $e)
+        if ($e.Key -eq [System.Windows.Input.Key]::Escape) {
+            $OptionsPopup.IsOpen = $false
+            [void]$OptionsArrowButton.Focus()
+            $e.Handled = $true
+        }
+    })
     Update-GlobalActionButton
 }
 #endregion
@@ -2756,7 +3142,7 @@ function Read-Configuration {
         return $null
     }
 }
-function Apply-Configuration {
+function Update-Configuration {
     param([Parameter(Mandatory)]$ConfigData)
     $clamp = { param($value, $min, $max, $fallback) if ($null -ne $value) { [Math]::Max($min, [Math]::Min($max, [int]$value)) } else { $fallback } }
     $newInterval = & $clamp $ConfigData.Interval 0 3600 ([int]$script:Settings.Interval)
@@ -2778,7 +3164,7 @@ function Apply-Configuration {
 }
 function Load-Configuration {
     $config = Read-Configuration
-    if ($config) { Apply-Configuration -ConfigData $config; $script:LoadedConfiguration = $config }
+    if ($config) { Update-Configuration -ConfigData $config; $script:LoadedConfiguration = $config }
     elseif (Test-Path -LiteralPath $script:ConfigPath -PathType Leaf) { Show-MessageBox -Message "The configuration could not be loaded." -Title 'Configuration error' -Icon Error }
 }
 #endregion
@@ -2800,7 +3186,6 @@ $script:CardElementVisibility = [ordered]@{
 }
 $script:GlobalPaused = $false
 $script:LastGlobalAction = 'Clear'
-$script:GlobalActionPopup = $null
 $script:ToolbarLabelsVisible = $null
 $script:Settings = New-DefaultSettings -Interval $Interval -Timeout $Timeout -BufferSize $BufferSize -HistoryDepth $HistoryDepth
 $script:Monitors = @{}
@@ -2832,14 +3217,17 @@ $StatusText = $Window.FindName('StatusText')
 $LoadButton = $Window.FindName('LoadButton')
 $SaveButton = $Window.FindName('SaveButton')
 $OptionsButton = $Window.FindName('OptionsButton')
+$GlobalPauseButton = $Window.FindName('GlobalPauseButton')
+$GlobalPauseIcon = $Window.FindName('GlobalPauseIcon')
+$GlobalPauseText = $Window.FindName('GlobalPauseText')
+$GlobalResetButton = $Window.FindName('GlobalResetButton')
+$GlobalClearButton = $Window.FindName('GlobalClearButton')
+$OptionsArrowButton = $Window.FindName('OptionsArrowButton')
+$OptionsPopup = $Window.FindName('OptionsPopup')
 $ToolbarPanel = $Window.FindName('ToolbarPanel')
 $HostInputPanel = $Window.FindName('HostInputPanel')
 $StatusBar = $Window.FindName('StatusBar')
 $ModeToggleButton = $Window.FindName('ModeToggleButton')
-$GlobalActionButton = $Window.FindName('GlobalActionButton')
-$GlobalActionArrowButton = $Window.FindName('GlobalActionArrowButton')
-$GlobalActionIcon = $Window.FindName('GlobalActionIcon')
-$GlobalActionText = $Window.FindName('GlobalActionText')
 $TitleCloseButton = $Window.FindName('TitleCloseButton')
 $TitleMinimizeButton = $Window.FindName('TitleMinimizeButton')
 $TitleMaximizeButton = $Window.FindName('TitleMaximizeButton')
@@ -2850,6 +3238,7 @@ $importMenu = [System.Windows.Controls.ContextMenu]::new()
 $importMenu.Style = $Window.FindResource('ThemedContextMenuStyle')
 $importItem = [System.Windows.Controls.MenuItem]::new()
 $importItem.Header = 'Import'
+$importItem.Icon = New-TransferMenuIcon
 $importItem.Style = $Window.FindResource('ThemedContextMenuItemStyle')
 $importItem.Add_Click({ Import-MonitorHosts })
 [void]$importMenu.Items.Add($importItem)
@@ -2879,17 +3268,18 @@ $AddButton.Add_Click({
             $HostInputPanel.Visibility = 'Collapsed'
         }
     })
-$LoadButton.Add_Click({ Load-Configuration })
+$LoadButton.Add_Click({ $OptionsPopup.IsOpen = $false; Load-Configuration })
 $SaveButton.Add_Click({
+        $OptionsPopup.IsOpen = $false
         try { Save-Configuration }
         catch { Show-MessageBox -Message "The configuration could not be saved.`n`n$($_.Exception.Message)" -Title 'Save error' -Icon Error }
     })
-$OptionsButton.Add_Click({ Show-OptionsWindow })
+$OptionsButton.Add_Click({ $OptionsPopup.IsOpen = $false; Show-OptionsWindow })
 $ViewToggleButton.Add_Click({
         $nextMode = if ($script:ViewMode -eq 'Card') { 'Table' } else { 'Card' }
         Set-ViewMode -Mode $nextMode
     })
-Initialize-GlobalActionSplitButton
+Initialize-ToolbarActions
 Register-DropTarget -Element $MonitorPanel
 Register-DropTarget -Element $MonitorScroll
 $TitleCloseButton.Add_Click({ $Window.Close() })
@@ -2942,6 +3332,14 @@ $Window.Add_KeyDown({
             Invoke-GlobalAction -Action 'Clear'
             $e.Handled = $true
         }
+        elseif ($e.Key -eq [System.Windows.Input.Key]::F5) {
+            Invoke-GlobalAction -Action 'Reset'
+            $e.Handled = $true
+        }
+        elseif ($e.Key -eq [System.Windows.Input.Key]::F6) {
+            Invoke-GlobalAction -Action 'PauseResume'
+            $e.Handled = $true
+        }
         elseif ($e.Key -eq [System.Windows.Input.Key]::OemComma -and $ctrl) {
             Show-OptionsWindow
             $e.Handled = $true
@@ -2992,13 +3390,19 @@ $Window.Add_SizeChanged({
     $script:ToolbarLabelsVisible = $showLabels
     $visibility = if ($showLabels) { 'Visible' } else { 'Collapsed' }
 
-    foreach ($btn in $LoadButton, $SaveButton, $OptionsButton, $ViewToggleButton) {
+    foreach ($btn in $GlobalPauseButton, $GlobalResetButton, $GlobalClearButton, $OptionsButton, $ViewToggleButton) {
         if ($btn.Content -is [System.Windows.Controls.StackPanel] -and $btn.Content.Children.Count -gt 1) {
             $btn.Content.Children[1].Visibility = $visibility
         }
     }
-    if ($GlobalActionText) { $GlobalActionText.Visibility = $visibility }
 
+    # BEGIN PingMonitor compact add button
+    $AddButton.Content = if ($showLabels) { 'Add monitor' } else { 'Add' }
+    $AddButton.MinWidth = if ($showLabels) { 80 } else { 44 }
+    $AddButton.Padding = if ($showLabels) {
+        [System.Windows.Thickness]::new(10, 1, 10, 1)
+    } else { [System.Windows.Thickness]::new(8, 1, 8, 1) }
+    # END PingMonitor compact add button
     $captionWidth = if ($showLabels) { 46 } else { 32 }
     foreach ($button in $TitleMinimizeButton, $TitleMaximizeButton, $TitleCloseButton) {
         $button.Width = $captionWidth
@@ -3030,7 +3434,7 @@ $Window.Add_Closing({
     })
 Register-SystemThemeWatcher
 if ($script:LoadedConfiguration -and -not $IgnoreConfiguration) { 
-    Apply-Configuration -ConfigData $script:LoadedConfiguration 
+    Update-Configuration -ConfigData $script:LoadedConfiguration 
 }
 $Window.UpdateLayout()
 $updateTimer.Start()
