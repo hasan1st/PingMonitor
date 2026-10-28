@@ -1014,6 +1014,7 @@ $script:MainWindowXaml = [xml]@'
                     Foreground="{DynamicResource Theme.Caption.Foreground}" />
             </DockPanel>
         </Border>
+<<<<<<< HEAD
         <Border x:Name="ToolbarPanel" Grid.Row="1"
             Background="{DynamicResource Theme.Toolbar.Background}"
             BorderBrush="{DynamicResource Theme.Divider}" BorderThickness="0,0,0,1" Padding="6,8">
@@ -1132,6 +1133,43 @@ $script:MainWindowXaml = [xml]@'
             Background="{DynamicResource Theme.Card.Background}"
             BorderBrush="{DynamicResource Theme.Border}" BorderThickness="1" CornerRadius="7"
             Padding="4">
+=======
+        <Border x:Name="ToolbarPanel" Grid.Row="1" Background="{DynamicResource Theme.Toolbar.Background}" BorderBrush="{DynamicResource Theme.Divider}" BorderThickness="0,0,0,1" Padding="6,8"><StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+<Button x:Name="GlobalPauseButton" Style="{DynamicResource PrimaryButtonStyle}" ToolTip="Pause all monitors (F6)"><StackPanel Orientation="Horizontal"><Path x:Name="GlobalPauseIcon" Data="M5,4 L10,4 L10,20 L5,20 Z M14,4 L19,4 L19,20 L14,20 Z" Width="16" Height="16" Stretch="Uniform"/><TextBlock x:Name="GlobalPauseText" Text="Pause" VerticalAlignment="Center" Margin="6,0,0,0"/></StackPanel></Button>
+<Button x:Name="GlobalResetButton" Style="{DynamicResource PrimaryButtonStyle}" ToolTip="Reset all monitor statistics (F5)"><StackPanel Orientation="Horizontal"><Path x:Name="GlobalResetIcon" Data="M960,0V213.333C1371.627,213.333 1706.667,548.267 1706.667,960S1371.627,1706.667 960,1706.667S213.333,1371.733 213.333,960C213.333,762.987 291.733,577.493 426.667,439.253V693.333H640V106.667H53.333V320H244.373C88.64,494.08 0,720.96 0,960C0,1489.28 430.613,1920 960,1920S1920,1489.28 1920,960S1489.387,0 960,0Z" Width="16" Height="16" Stretch="Uniform"/><TextBlock x:Name="GlobalResetText" Text="Reset" VerticalAlignment="Center" Margin="6,0,0,0"/></StackPanel></Button>
+<Button x:Name="GlobalClearButton" Style="{DynamicResource PrimaryButtonStyle}" ToolTip="Clear all monitors (F4)"><StackPanel Orientation="Horizontal"><Path x:Name="GlobalClearIcon" Data="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" Width="16" Height="16" Stretch="Uniform"/><TextBlock x:Name="GlobalClearText" Text="Clear" VerticalAlignment="Center" Margin="6,0,0,0"/></StackPanel></Button>
+<Rectangle Style="{DynamicResource ToolbarSeparatorStyle}"/>
+<Button x:Name="ViewToggleButton" Style="{DynamicResource PrimaryButtonStyle}" ToolTip="Switch to table view (F8)">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <Path x:Name="ViewToggleIcon" Width="16" Height="16" Stretch="Uniform" Data="M3,3H21V21H3V3M5,5V8H19V5H5M5,10V14H19V10H5M5,16V19H19V16H5Z" SnapsToDevicePixels="True"/>
+                            <TextBlock x:Name="ViewToggleText" Text="Table" VerticalAlignment="Center" Margin="6,0,0,0"/>
+                        </StackPanel>
+                    </Button>
+<Rectangle Style="{DynamicResource ToolbarSeparatorStyle}"/>
+<Border x:Name="OptionsSplitButton" Height="32" Margin="0,0,4,0" BorderThickness="1" BorderBrush="{DynamicResource Theme.Border}" CornerRadius="4">
+<Grid><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="1"/><ColumnDefinition Width="22"/></Grid.ColumnDefinitions>
+<Button x:Name="OptionsButton" MinWidth="36" Style="{DynamicResource SplitButtonPartStyle}" ToolTip="Monitoring options (Ctrl+,)"><StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="10,0">
+                            <Path Data="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" Width="16" Height="16" Stretch="Uniform" SnapsToDevicePixels="True"/>
+                            <TextBlock Text="Options" VerticalAlignment="Center" Margin="6,0,0,0"/>
+                        </StackPanel></Button>
+<Border Grid.Column="1" Height="18" Background="{DynamicResource Theme.Border}"/>
+<Button x:Name="OptionsArrowButton" Grid.Column="2" Style="{DynamicResource SplitButtonPartStyle}" ToolTip="Save (F3 / Ctrl+S) or load (F2) configuration"><Path Width="6" Height="5" Stretch="Fill" Data="M0,0 L8,0 L4,5 Z"/></Button>
+<Popup x:Name="OptionsPopup" PlacementTarget="{Binding ElementName=OptionsSplitButton}" Placement="Bottom" VerticalOffset="3" AllowsTransparency="True" StaysOpen="False">
+<Border Background="{DynamicResource Theme.Popup.Background}" BorderBrush="{DynamicResource Theme.Popup.Border}" BorderThickness="1" CornerRadius="7" Padding="3" MinWidth="100"><StackPanel><Button x:Name="SaveButton" Style="{DynamicResource SplitMenuButtonStyle}" ToolTip="Save configuration (F3 / Ctrl+S)">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                            <Path Data="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z" Width="16" Height="16" Stretch="Uniform" SnapsToDevicePixels="True"/>
+                            <TextBlock Text="Save" VerticalAlignment="Center" Margin="6,0,0,0"/>
+                        </StackPanel>
+                    </Button>
+<Button x:Name="LoadButton" Style="{DynamicResource SplitMenuButtonStyle}" ToolTip="Load configuration (F2)">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                            <Path Data="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" Width="16" Height="16" Stretch="Uniform" SnapsToDevicePixels="True"/>
+                            <TextBlock Text="Load" VerticalAlignment="Center" Margin="6,0,0,0"/>
+                        </StackPanel>
+                    </Button></StackPanel></Border></Popup></Grid></Border>
+</StackPanel></Border>
+        <Border x:Name="HostInputPanel" Grid.Row="2" Margin="6,3,6,2" Background="{DynamicResource Theme.Card.Background}" BorderBrush="{DynamicResource Theme.Border}" BorderThickness="1" CornerRadius="7" Padding="4">
+>>>>>>> 15d6777c45bc2f0c8125421ea716f58882a9426a
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -1573,11 +1611,16 @@ $script:MainWindowXaml = [xml]@'
             Background="{DynamicResource Theme.Toolbar.Background}"
             BorderBrush="{DynamicResource Theme.Divider}" BorderThickness="0,1,0,0" Padding="14,7">
             <DockPanel>
+<<<<<<< HEAD
                 <TextBlock x:Name="StatusText" Text="Ready"
                     Foreground="{DynamicResource Theme.Text.Secondary}" />
                 <TextBlock
                     Text="F2 Load   F3 / Ctrl+S Save   F4 Clear   F5 Reset   F6 Pause/Resume   Ctrl+, Options   F8 View   F9 Compact"
                     Foreground="{DynamicResource Theme.Text.Muted}" HorizontalAlignment="Right" />
+=======
+                <TextBlock x:Name="StatusText" Text="Ready" Foreground="{DynamicResource Theme.Text.Secondary}"/>
+                <TextBlock Text="F2 Load   F3 / Ctrl+S Save   F4 Clear   F5 Reset   F6 Pause/Resume   Ctrl+, Options   F8 View   F9 Compact" Foreground="{DynamicResource Theme.Text.Muted}" HorizontalAlignment="Right"/>
+>>>>>>> 15d6777c45bc2f0c8125421ea716f58882a9426a
             </DockPanel>
         </Border>
         <Border x:Name="ModalOverlay" Grid.Row="0" Grid.RowSpan="5"
